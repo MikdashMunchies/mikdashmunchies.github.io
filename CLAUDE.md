@@ -23,10 +23,12 @@
 *Update this at the end of every session. A future session reads it first.*
 
 - **Current Phase:** David's Google back end is LIVE (Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Site works against it locally.
-- **Current Goal:** Publish the site (GitHub Pages) so students can open it
-- **Current Priority:** Create the GitHub repo + enable Pages (`main` / `/docs`) — needs Ethan's OK
+- **Live:** https://ethan08madar-web.github.io/school-food-sites/davids-paninis/ (admin: + `admin.html`).
+  Repo https://github.com/ethan08madar-web/school-food-sites (public; Pages = `main` / `/docs`).
+- **Current Goal:** Hand the link to David and take real orders
+- **Current Priority:** Put David's real Zelle + prices into the Sheet (Settings / Menu tabs)
 - **Current Blockers:** David's Zelle phone/email still "CHANGE ME" in the Sheet's Settings tab; prices are sample prices
-- **Recommended Next Task:** Ethan gets David's Zelle + real prices → put them in the Sheet; create the repo and turn on Pages; delete the 2 "Test Order" rows in the Sheet if wanted; real panini photo
+- **Recommended Next Task:** Fill in Zelle + prices; delete the 2 "Test Order" rows if wanted; real panini photo; second customer via `node build.js new`
 
 *Last updated: 2026-10-12*
 
