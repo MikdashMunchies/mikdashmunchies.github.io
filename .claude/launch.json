@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5510", "--bind", "127.0.0.1", "--directory", "C:/Users/ethan/Claude/SchoolFoodSites"],
+      "port": 5510
+    }
+  ]
+}
