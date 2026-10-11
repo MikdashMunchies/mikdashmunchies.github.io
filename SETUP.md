@@ -72,10 +72,18 @@ The URL stays the same. (A "New deployment" would give a new URL.)
 Commit and push. The first time only, on GitHub: **Settings → Pages → Deploy from a branch →
 `main` / `/docs` → Save**. After about a minute every shop is live:
 
-- Shop: `https://<your-username>.github.io/<repo>/sarahs-cookies/`
+- Shop: `https://mikdashmunchies.github.io/sarahs-cookies/`
 - Admin: tap the shop name **5 times quickly**, or add `admin.html` to the end of that link.
 
-### 5. Test it for real
+### 5. Make its QR code
+
+```bash
+python qr/make_qr.py https://mikdashmunchies.github.io/sarahs-cookies/ "Sarah's Cookies" qr/sarahs-cookies.png
+```
+
+It prints `OK: scans to the right link` only after reading the code back. Print it or post it in the group chat.
+
+### 6. Test it for real
 
 1. Place an order on your phone. Check a row shows up in the Sheet's **Orders** tab.
 2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too.
