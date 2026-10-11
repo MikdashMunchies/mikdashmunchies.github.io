@@ -45,5 +45,6 @@ Multiple different paninis per order, pickup times, card payments, dark mode, sp
 - Real Google deploy: done by Ethan (needs his account) using `SETUP.md`.
 
 ## Business pricing (what Ethan charges sellers)
-- $15 one-time setup · $5/month · or $35 for the school year (push this one) · first month free.
+- **$10 one-time setup · $15/month** (set by Ethan 2026-10-11).
 - Optional custom domain +$15/yr (costs ~$12).
+- Zelle recipient for David: placeholder until David provides it (set in the Sheet).
