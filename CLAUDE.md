@@ -36,7 +36,7 @@
 
 Ethan's business: he builds and runs simple food-ordering websites for students who sell food at
 his school. Customers build an order on their phone, pay the seller by Zelle, and the seller sees
-orders in an admin page and by email. First customer: **David's Meat Paninis**.
+orders in an admin page. First customer: **David's Meat Paninis**.
 
 ## Business Rules
 
@@ -58,11 +58,13 @@ orders in an admin page and by email. First customer: **David's Meat Paninis**.
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** the Google Sheet. Tabs `Menu` (Type/Name/Price), `Settings` (Key/Value: shopName,
-  tagline, zelleTo, orderEmail), `Orders`. Order numbers come from Script Property `NEXT_ID`.
+  tagline, zelleTo, open), `Orders`. Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
   list/update. The browser keeps it in `sessionStorage` only.
-- **Email:** `MailApp` to `orderEmail` (or the Sheet owner), sent from the account that deployed
-  the script (~100/day on free Gmail). An email failure never loses the order.
+- **Open / sold out:** Settings `open` (`yes`/`no`; missing = open). Admin's Close shop button
+  sets it. When closed the site shows "Sold out!" and the server refuses orders. The site re-checks
+  before showing Zelle details so nobody pays after closing.
+- **No emails** (Ethan, 2026-10-12: not needed). The admin page is where orders are seen.
 - **Admin access:** same site, unlinked (`admin.html`, `noindex`). Hidden shortcut: tap the shop
   name 5 times within 1.5s (`shop.js`). The password is the real protection, not the hidden URL.
 
@@ -70,9 +72,10 @@ orders in an admin page and by email. First customer: **David's Meat Paninis**.
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `?action=menu` | none | Menu + public settings (never `orderEmail`) |
-| POST | `{action:'order', name, room, note, meat, addons, qty}` | none | Validate, price, save, email → `{id,total}` |
-| POST | `{action:'list', password}` | password | All orders, newest first |
+| GET | `?action=menu` | none | Menu + public settings, incl. `shop.open` |
+| POST | `{action:'order', name, room, note, meat, addons, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
+| POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
+| POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
 | POST | `{action:'update', password, id, status}` | password | Change one order's status |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
@@ -80,7 +83,7 @@ Errors come back as `{ error: "message" }` with HTTP 200.
 
 ## Integrations
 
-- **Google Apps Script / Sheets / MailApp:** free; runs under the Google account that deployed it.
+- **Google Apps Script / Sheets:** free; runs under the Google account that deployed it.
   If the script is down or the URL is wrong, the shop shows "Couldn't load the menu".
 - **Zelle:** link-out only (`https://www.zelle.com/get-started`). No link can pre-fill a payment,
   because Zelle lives inside each bank's app.
@@ -107,7 +110,7 @@ real photo should replace it (see SETUP.md). Light mode only. Phone: total + Con
 
 ## Roadmap
 
-- [x] **Milestone 1: David's Meat Paninis**: ordering, Zelle step, admin, email, demo mode
+- [x] **Milestone 1: David's Meat Paninis**: ordering, Zelle step, admin, open/close, demo mode
 - [ ] **Milestone 2: Go live**: deploy script + GitHub Pages, real test order, real photo
 - [ ] **Milestone 3: Second customer**: decide how to host many shops (folder per shop vs. one
   repo per shop), and make name/colors easy to change per shop
@@ -116,10 +119,12 @@ real photo should replace it (see SETUP.md). Light mode only. Phone: total + Con
 
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
-| 2026-10-11 | Google Sheet + Apps Script back end, static site on GitHub Pages | $0, never sleeps, built-in email, the seller edits the menu in the Sheet | Render + Supabase (free Render sleeps ~50s; 3 accounts), Supabase only (email needs another service), Formspree (50/month cap, no admin) |
+| 2026-10-11 | Google Sheet + Apps Script back end, static site on GitHub Pages | $0, never sleeps, the seller edits the menu in the Sheet | Render + Supabase (free Render sleeps ~50s; 3 accounts), Supabase only (email needs another service), Formspree (50/month cap, no admin) |
 | 2026-10-11 | Server recomputes price from the Menu tab | Anyone can edit browser JS to pay $0.01 | Trusting the browser's total |
 | 2026-10-11 | Order is saved only after "I sent it" | Matches Yeshivah4All's Zelle flow; fewer junk orders | Saving before showing Zelle details |
 | 2026-10-11 | Demo mode when `API_URL` is empty | Preview without Google; show prospects a working demo | Separate mock server |
+| 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
+| 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-11 | Redesign from toasty-gold hero to white/bold/sticker style | Ethan: more white space, bold, more jump, modern but fun | Gold grill-mark hero (v1) |
 
 ## Implementation Notes

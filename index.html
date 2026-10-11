@@ -29,6 +29,7 @@
       <figure class="hero-art">
         <span class="sticker sticker-hot">Hot &amp;<br>pressed</span>
         <span class="sticker sticker-price" id="from-price" hidden></span>
+        <span class="sticker sticker-soldout" aria-hidden="true">Sold<br>out</span>
         <svg class="panini" viewBox="0 -54 320 304" role="img" aria-label="A hot pressed meat panini cut in half, cheese melting out">
           <defs>
             <clipPath id="top-bread"><rect x="36" y="96" width="248" height="50" rx="22"/></clipPath>
@@ -59,6 +60,11 @@
   </header>
 
   <p class="demo-banner" id="demo-banner" hidden>Demo mode: orders aren't saved.</p>
+
+  <section id="closed" class="panel panel-closed" hidden aria-labelledby="closed-title">
+    <h2 id="closed-title">Sold out!</h2>
+    <p>We're not taking any more orders right now. Check back soon.</p>
+  </section>
 
   <main id="order" class="layout">
     <form id="order-form" class="builder" novalidate>

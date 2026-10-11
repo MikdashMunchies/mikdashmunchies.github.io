@@ -34,6 +34,14 @@
     </form>
 
     <section id="board" hidden aria-live="polite">
+      <div class="shop-status" id="shop-status">
+        <div>
+          <p class="shop-status-label">Your shop is</p>
+          <p class="shop-status-value" id="shop-state">Open</p>
+          <p class="shop-status-hint" id="shop-hint">Taking orders</p>
+        </div>
+        <button type="button" class="btn" id="toggle-open">Close shop</button>
+      </div>
       <div id="tabs" class="tabs" role="tablist" aria-label="Filter orders"></div>
       <p id="owed" class="owed"></p>
       <p id="board-error" class="error" role="alert"></p>

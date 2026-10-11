@@ -16,11 +16,15 @@ function doPost(e) {
     if (body.action === 'order') return json_(placeOrder_(body));
     if (body.action === 'list') {
       checkPassword_(body.password);
-      return json_({ orders: listOrders_() });
+      return json_({ orders: listOrders_(), open: getMenu_().shop.open });
     }
     if (body.action === 'update') {
       checkPassword_(body.password);
       return json_(updateOrder_(Number(body.id), body.status));
+    }
+    if (body.action === 'setOpen') {
+      checkPassword_(body.password);
+      return json_(setOpen_(body.open === true));
     }
     return json_({ error: 'Unknown action.' });
   } catch (err) {
@@ -54,7 +58,7 @@ function setup() {
     ['shopName', "David's Meat Paninis"],
     ['tagline', 'Pressed hot, delivered to your classroom.'],
     ['zelleTo', 'CHANGE ME — David\'s Zelle phone or email'],
-    ['orderEmail', ''],
+    ['open', 'yes'],
   ]);
   make('Orders', [ORDER_HEADERS]);
 }
@@ -70,9 +74,10 @@ function getMenu_() {
     else if (t === 'add-on' || t === 'addon') menu.addons.push(item);
   });
   rows_(ss.getSheetByName('Settings')).forEach(([key, value]) => {
-    // orderEmail stays private; the site doesn't need it.
-    if (key && key !== 'orderEmail') menu.shop[String(key).trim()] = String(value).trim();
+    if (key) menu.shop[String(key).trim()] = String(value).trim();
   });
+  // Open unless the sheet says no (also covers an unticked checkbox, which reads as "false").
+  menu.shop.open = !/^(no|false|closed)$/i.test(menu.shop.open || '');
   return menu;
 }
 
@@ -99,6 +104,7 @@ function priceOrder_(menu, o) {
 
 function placeOrder_(body) {
   const menu = getMenu_();
+  if (!menu.shop.open) throw new Error("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
   const order = priceOrder_(menu, body);
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -113,17 +119,6 @@ function placeOrder_(body) {
     ].map(safeCell_));
   } finally {
     lock.releaseLock();
-  }
-  try {
-    MailApp.sendEmail(ownerEmail_(), 'New order #' + id + ' — ' + order.name + ', room ' + order.room, [
-      order.qty + ' × ' + order.meat + (order.addons.length ? ' + ' + order.addons.join(', ') : ''),
-      'Total: $' + order.total.toFixed(2) + ' (waiting for Zelle)',
-      'Name: ' + order.name,
-      'Room: ' + order.room,
-      order.note ? 'Note: ' + order.note : '',
-    ].filter(Boolean).join('\n'));
-  } catch (err) {
-    // The order is already saved; a missed email must not lose it.
   }
   return { id, total: order.total };
 }
@@ -149,15 +144,20 @@ function updateOrder_(id, status) {
   throw new Error('Order not found.');
 }
 
+function setOpen_(open) {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('Settings');
+  const rows = sheet.getDataRange().getValues();
+  const value = open ? 'yes' : 'no';
+  const i = rows.findIndex((r, n) => n > 0 && String(r[0]).trim() === 'open');
+  if (i > 0) sheet.getRange(i + 1, 2).setValue(value);
+  else sheet.appendRow(['open', value]);
+  return { ok: true, open };
+}
+
 // ponytail: no lockout after wrong guesses; use a long password (SETUP.md). Add a counter if abused.
 function checkPassword_(password) {
   const real = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
   if (!real || password !== real) throw new Error('Wrong password.');
-}
-
-function ownerEmail_() {
-  const row = rows_(SpreadsheetApp.getActive().getSheetByName('Settings')).find(r => r[0] === 'orderEmail');
-  return (row && String(row[1]).trim()) || Session.getEffectiveUser().getEmail();
 }
 
 function rows_(sheet) {

@@ -17,7 +17,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ mailFails = false } = {}) {
+function load({ open } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -31,24 +31,22 @@ function load({ mailFails = false } = {}) {
       ['shopName', "David's Meat Paninis"],
       ['tagline', 'Hot off the press'],
       ['zelleTo', '555-123-4567'],
+      ...(open === undefined ? [] : [['open', open]]),
     ]),
     Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Status']]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass' };
-  const mails = [];
   const ctx = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-    MailApp: { sendEmail: (to, subject, body) => { if (mailFails) throw new Error('quota'); mails.push({ to, subject, body }); } },
-    Session: { getEffectiveUser: () => ({ getEmail: () => 'owner@example.com' }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ text: s, setMimeType() { return this; } }) },
   };
   vm.createContext(ctx);
   vm.runInContext(CODE, ctx);
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).text);
   const get = action => JSON.parse(ctx.doGet({ parameter: { action } }).text);
-  return { post, get, sheets, mails };
+  return { post, get, sheets };
 }
 
 const good = { action: 'order', name: 'Avi', room: '204', meat: 'Pastrami', addons: ['Pickles', 'Extra meat'], qty: 2 };
@@ -99,17 +97,33 @@ test('formula-looking text is escaped before it reaches the sheet', () => {
   assert.strictEqual(row[8], "'+1 extra");
 });
 
-test('owner gets an email; a failed email still keeps the order', () => {
-  const ok = load();
-  ok.post(good);
-  assert.strictEqual(ok.mails.length, 1);
-  assert.strictEqual(ok.mails[0].to, 'owner@example.com');
-  assert.match(ok.mails[0].body, /Avi/);
-  assert.match(ok.mails[0].body, /204/);
+test('shop is open unless the sheet says no', () => {
+  assert.strictEqual(load().get('menu').shop.open, true); // no "open" row at all
+  assert.strictEqual(load({ open: 'yes' }).get('menu').shop.open, true);
+  assert.strictEqual(load({ open: 'no' }).get('menu').shop.open, false);
+  assert.strictEqual(load({ open: false }).get('menu').shop.open, false); // a Sheets checkbox
+});
 
-  const failing = load({ mailFails: true });
-  assert.strictEqual(failing.post(good).id, 1);
-  assert.strictEqual(failing.sheets.Orders.rows.length, 2);
+test('a closed shop refuses orders and saves nothing', () => {
+  const { post, sheets } = load({ open: 'no' });
+  assert.match(post(good).error, /sold out/i);
+  assert.strictEqual(sheets.Orders.rows.length, 1);
+});
+
+test('admin can close and reopen the shop, with the password only', () => {
+  const { post, get, sheets } = load();
+  assert.ok(post({ action: 'setOpen', password: 'nope', open: false }).error);
+  assert.strictEqual(get('menu').shop.open, true);
+
+  assert.deepStrictEqual(post({ action: 'setOpen', password: 'secret-pass', open: false }), { ok: true, open: false });
+  assert.strictEqual(get('menu').shop.open, false);
+  assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).open, false);
+  assert.ok(post(good).error);
+
+  post({ action: 'setOpen', password: 'secret-pass', open: true });
+  assert.strictEqual(get('menu').shop.open, true);
+  assert.strictEqual(post(good).id, 1);
+  assert.strictEqual(sheets.Settings.rows.filter(r => r[0] === 'open').length, 1); // reuses the row
 });
 
 test('admin list and update need the right password', () => {
