@@ -43,8 +43,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **What Ethan charges sellers:** $10 one-time setup + $15/month (set by Ethan 2026-10-11).
   Optional custom domain +$15/yr (costs about $12).
 - **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
-  `Pending payment`; the seller taps **Got their Zelle** after checking their bank.
-- Statuses are exactly `Pending payment` → `Paid` → `Delivered` (Undo steps back one).
+  un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
+  in the Sheet's checkbox column). No other statuses (Ethan, 2026-10-12: just name, room, order, Zelled).
 - One panini style per order × quantity 1–10. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
 - The **server** prices every order from the Sheet's Menu tab; the browser total is display-only.
 - Most buyers are on phones, so design and test phone-first.
@@ -76,7 +76,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'order', name, room, note, meat, addons, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
-| POST | `{action:'update', password, id, status}` | password | Change one order's status |
+| POST | `{action:'update', password, id, zelled}` | password | Tick or untick Zelled on one order |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
 Errors come back as `{ error: "message" }` with HTTP 200.
@@ -133,7 +133,11 @@ real photo should replace it (see SETUP.md). Light mode only. Phone: total + Con
 - On phones, `.ticket-paper` must not have a `filter` or `transform`: either one makes the
   `position: fixed` checkout bar stick to the ticket instead of the screen.
 - `.layout`/`.tiles` set `display`, so `[hidden] { display:none !important }` is needed for views to hide.
-- Admin password: no lockout after wrong guesses (`ponytail:` note in Code.gs). Use 12+ characters.
+- Admin code defaults to `1234` (Ethan's choice; `setup()` sets it only if none exists). No lockout
+  after wrong guesses (`ponytail:` note in Code.gs), so 1234 is guessable; worst case is someone
+  viewing orders / ticking boxes, not prices or money.
+- Zelled checkboxes are inserted per new row, not pre-filled: pre-filled checkbox cells hold
+  `FALSE`, count as data, and `appendRow` would skip past them to row 1000+.
 - Apps Script redeploys: **Manage deployments → New version** keeps the URL; "New deployment" changes it.
 
 ## Notes

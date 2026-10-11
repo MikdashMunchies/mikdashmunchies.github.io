@@ -1,9 +1,9 @@
 // Backend for one shop. Lives inside the shop's Google Sheet (Extensions > Apps Script).
 // Deploy as a web app: Execute as "Me", access "Anyone". See SETUP.md.
 
-const STATUSES = ['Pending payment', 'Paid', 'Delivered'];
 const MAX_QTY = 10;
-const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Status'];
+const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Zelled'];
+const ZELLED_COL = 10;
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'menu') return json_(getMenu_());
@@ -20,7 +20,7 @@ function doPost(e) {
     }
     if (body.action === 'update') {
       checkPassword_(body.password);
-      return json_(updateOrder_(Number(body.id), body.status));
+      return json_(updateOrder_(Number(body.id), body.zelled === true));
     }
     if (body.action === 'setOpen') {
       checkPassword_(body.password);
@@ -61,6 +61,8 @@ function setup() {
     ['open', 'yes'],
   ]);
   make('Orders', [ORDER_HEADERS]);
+  const props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('ADMIN_PASSWORD')) props.setProperty('ADMIN_PASSWORD', '1234');
 }
 
 function getMenu_() {
@@ -113,10 +115,14 @@ function placeOrder_(body) {
     const props = PropertiesService.getScriptProperties();
     id = Number(props.getProperty('NEXT_ID') || 1);
     props.setProperty('NEXT_ID', id + 1);
-    SpreadsheetApp.getActive().getSheetByName('Orders').appendRow([
+    const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
+    sheet.appendRow([
       id, new Date(), order.name, order.room, order.meat, order.addons.join(', '),
-      order.qty, order.total, order.note, STATUSES[0],
+      order.qty, order.total, order.note, false,
     ].map(safeCell_));
+    // A real checkbox, so the seller can also tick "Zelled" right in the Sheet.
+    // Added per row: pre-filling empty rows with checkboxes would make appendRow skip past them.
+    sheet.getRange(sheet.getLastRow(), ZELLED_COL).insertCheckboxes();
   } finally {
     lock.releaseLock();
   }
@@ -127,17 +133,17 @@ function listOrders_() {
   return rows_(SpreadsheetApp.getActive().getSheetByName('Orders')).map(r => ({
     id: r[0],
     time: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
-    name: r[2], room: r[3], meat: r[4], addons: r[5], qty: r[6], total: r[7], note: r[8], status: r[9],
+    name: r[2], room: r[3], meat: r[4], addons: r[5], qty: r[6], total: r[7], note: r[8],
+    zelled: r[9] === true || String(r[9]).toUpperCase() === 'TRUE',
   })).reverse();
 }
 
-function updateOrder_(id, status) {
-  if (STATUSES.indexOf(status) === -1) throw new Error('Unknown status.');
+function updateOrder_(id, zelled) {
   const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
   const rows = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (Number(rows[i][0]) === id) {
-      sheet.getRange(i + 1, 10).setValue(status);
+      sheet.getRange(i + 1, ZELLED_COL).setValue(zelled);
       return { ok: true };
     }
   }

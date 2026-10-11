@@ -20,14 +20,14 @@
     </div>
   </header>
 
-  <p class="demo-banner" id="demo-banner" hidden>Demo mode: the password is <code>demo</code>.</p>
+  <p class="demo-banner" id="demo-banner" hidden>Demo mode: the code is <code>1234</code>.</p>
 
   <main class="admin-main">
     <form id="login" class="login">
-      <h2>Log in to see orders</h2>
+      <h2>Enter the admin code</h2>
       <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="current-password" required>
+        <label for="password">Code</label>
+        <input id="password" class="code-input" type="password" inputmode="numeric" autocomplete="current-password" required>
       </div>
       <p id="login-error" class="error" role="alert"></p>
       <button class="btn btn-primary btn-wide" id="login-btn">Log in</button>
@@ -42,10 +42,15 @@
         </div>
         <button type="button" class="btn" id="toggle-open">Close shop</button>
       </div>
-      <div id="tabs" class="tabs" role="tablist" aria-label="Filter orders"></div>
-      <p id="owed" class="owed"></p>
       <p id="board-error" class="error" role="alert"></p>
-      <ul id="orders" class="orders"></ul>
+      <div class="sheet-wrap">
+        <table class="sheet">
+          <thead>
+            <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Zelled</th></tr>
+          </thead>
+          <tbody id="orders"></tbody>
+        </table>
+      </div>
     </section>
   </main>
 

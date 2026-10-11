@@ -16,6 +16,7 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Demo mode (no Google needed) and `SETUP.md`.
 - Hidden admin shortcut: tap the shop name 5 times.
 - Admin "Close shop / Open shop" switch; site shows "Sold out!" and the server refuses orders while closed.
+- Admin is now a simple table (Name · Room · Order · Zelled checkbox) behind code 1234; the Sheet gets real checkboxes.
 
 ### Removed
 - Order emails (not needed; admin page shows orders).
