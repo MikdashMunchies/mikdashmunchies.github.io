@@ -14,13 +14,47 @@
 <body class="shop">
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow">Delivered to your room · Pay with Zelle</p>
-      <h1>
-        <span class="welcome">Welcome to</span>
-        <span class="shop-name" data-shop="shopName">David's Meat Paninis</span>
-      </h1>
-      <p class="tagline" data-shop="tagline">Pressed hot, delivered to your classroom.</p>
-      <a class="btn btn-dark" href="#order">Build your panini</a>
+      <div class="hero-text">
+        <p class="eyebrow">Delivered to your room · Pay with Zelle</p>
+        <h1>
+          <span class="welcome">Welcome to</span>
+          <span class="shop-name" data-shop="shopName">David's Meat Paninis</span>
+        </h1>
+        <p class="tagline" data-shop="tagline">Pressed hot, delivered to your classroom.</p>
+        <a class="btn btn-primary btn-big" href="#order">Build your panini</a>
+      </div>
+
+      <!-- Swap this drawing for a real photo of the food when there is one:
+           <img class="hero-photo" src="panini.jpg" alt="..."> -->
+      <figure class="hero-art">
+        <span class="sticker sticker-hot">Hot &amp;<br>pressed</span>
+        <span class="sticker sticker-price" id="from-price" hidden></span>
+        <svg class="panini" viewBox="0 -54 320 304" role="img" aria-label="A hot pressed meat panini cut in half, cheese melting out">
+          <defs>
+            <clipPath id="top-bread"><rect x="36" y="96" width="248" height="50" rx="22"/></clipPath>
+            <g id="half">
+              <rect x="40" y="168" width="240" height="34" rx="16" fill="#E9A43A" stroke="#1A1410" stroke-width="4"/>
+              <path d="M40 172 Q55 154 70 166 T100 166 T130 166 T160 166 T190 166 T220 166 T250 166 T280 172 L280 178 L40 178 Z" fill="#6CC24A" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M44 162 C80 142 110 172 140 154 S200 172 230 152 S270 168 278 158 L278 172 L44 172 Z" fill="#B8434A" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M46 150 C80 132 112 160 142 142 S202 160 232 140 S268 154 276 146 L276 162 L46 162 Z" fill="#E06A6A" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M44 140 L276 140 L276 150 Q264 150 262 168 Q258 150 240 150 L192 150 Q181 150 179 176 Q176 150 166 150 L112 150 Q101 150 99 164 Q96 150 86 150 L44 150 Z" fill="#FFC233" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+              <rect x="36" y="96" width="248" height="50" rx="22" fill="#F2B33D"/>
+              <g clip-path="url(#top-bread)" stroke="#6B3A12" stroke-width="8" stroke-linecap="round" opacity=".85">
+                <path d="M62 150 L96 92 M110 150 L144 92 M158 150 L192 92 M206 150 L240 92 M254 150 L288 92"/>
+              </g>
+              <rect x="36" y="96" width="248" height="50" rx="22" fill="none" stroke="#1A1410" stroke-width="4"/>
+            </g>
+          </defs>
+          <ellipse cx="170" cy="226" rx="140" ry="14" fill="#1A1410" opacity=".12"/>
+          <use href="#half" transform="translate(52 -58) scale(.86)"/>
+          <use href="#half" transform="translate(-8 14)"/>
+          <g class="steam" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round" opacity=".35">
+            <path d="M140 14 q-10 -14 0 -28 t0 -28"/>
+            <path d="M190 6 q-10 -14 0 -28 t0 -28"/>
+            <path d="M240 14 q-10 -14 0 -28 t0 -28"/>
+          </g>
+        </svg>
+      </figure>
     </div>
   </header>
 
@@ -88,7 +122,9 @@
   <section id="pay" class="panel" hidden aria-labelledby="pay-title" tabindex="-1">
     <h2 id="pay-title">Pay with Zelle</h2>
     <ol class="pay-steps">
-      <li>Open your bank app and choose <strong>Zelle</strong>.</li>
+      <li>Open <strong>Zelle</strong> in your bank app.
+        <a class="btn-zelle" href="https://www.zelle.com/get-started" target="_blank" rel="noopener">Open Zelle<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+      </li>
       <li>
         Send <strong id="pay-amount" class="mono"></strong> to
         <span class="copy-row"><code id="zelle-to"></code><button type="button" class="btn-copy" data-copy="zelle-to">Copy</button></span>
@@ -105,7 +141,8 @@
 
   <section id="done" class="panel panel-done" hidden aria-labelledby="done-title" tabindex="-1">
     <p class="order-num mono">Order #<span id="done-id"></span></p>
-    <h2 id="done-title">Order placed!</h2>
+    <div class="done-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg></div>
+    <h2 id="done-title">Order completed</h2>
     <p>You're on the list. As soon as your <strong id="done-total" class="mono"></strong> Zelle shows up, your panini heads to room <strong id="done-room"></strong>.</p>
     <button type="button" class="btn btn-primary btn-wide" id="again">Order another</button>
   </section>

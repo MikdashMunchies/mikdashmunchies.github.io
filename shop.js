@@ -20,6 +20,10 @@ async function init() {
     if (value) el.textContent = value;
   });
   if (menu.shop.shopName) document.title = menu.shop.shopName;
+  if (menu.meats.length) {
+    $('from-price').textContent = 'from ' + money(Math.min(...menu.meats.map(m => m.price)));
+    $('from-price').hidden = false;
+  }
   $('meats').replaceChildren(...menu.meats.map((m, i) => option('radio', 'meat', m, money(m.price), i === 0)));
   $('meats').removeAttribute('aria-busy');
   $('addons').replaceChildren(...menu.addons.map(a => option('checkbox', 'addon', a, '+' + money(a.price))));
