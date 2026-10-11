@@ -22,11 +22,11 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** Reusable template done; first shop (David's Meat Paninis) verified in demo mode
-- **Current Goal:** Get David's shop live: Google Sheet + script deployed, site on GitHub Pages
-- **Current Priority:** Ethan runs `SETUP.md` steps 2–5 for David (he opened Google Sheets sign-in on 2026-10-12)
-- **Current Blockers:** David's Zelle phone/email not provided yet; no GitHub repo yet
-- **Recommended Next Task:** Walk Ethan through the Google setup, put the web app URL in `shops/davids-paninis/shop.json` → `node build.js`, one real order end to end; swap in a real panini photo
+- **Current Phase:** David's Google back end is LIVE (Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Site works against it locally.
+- **Current Goal:** Publish the site (GitHub Pages) so students can open it
+- **Current Priority:** Create the GitHub repo + enable Pages (`main` / `/docs`) — needs Ethan's OK
+- **Current Blockers:** David's Zelle phone/email still "CHANGE ME" in the Sheet's Settings tab; prices are sample prices
+- **Recommended Next Task:** Ethan gets David's Zelle + real prices → put them in the Sheet; create the repo and turn on Pages; delete the 2 "Test Order" rows in the Sheet if wanted; real panini photo
 
 *Last updated: 2026-10-12*
 
@@ -147,7 +147,14 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 
 ## Implementation Notes
 
-- `safeCell_` prefixes `'` to text starting with `= + - @` so names can't run as Sheet formulas.
+- `safeCell_` prefixes `'` to EVERY non-empty typed string: Sheets otherwise runs `=...` as a
+  formula, turns room "012" into 12, and "3-12" into a date (seen live 2026-10-12: room "000" saved as 0).
+- Admin refresh vs. tick race: a `list` that started before a tick returns old data; `load()`
+  drops its answer if `ticks` changed meanwhile. Counters must be declared before the startup
+  `if (password) load()` (a TDZ error broke saved logins once).
+- Live deployment: `shops/davids-paninis/shop.json` `apiUrl` = deployment "davids panninis test"
+  (there's also an unused "Shop v1" deployment). After changing Code.gs: paste into the Apps Script
+  editor, then Deploy → Manage deployments → "davids panninis test" → pencil → New version.
 - On phones, `.ticket-paper` must not have a `filter` or `transform`: either one makes the
   `position: fixed` checkout bar stick to the ticket instead of the screen.
 - `.layout`/`.tiles` set `display`, so `[hidden] { display:none !important }` is needed for views to hide.

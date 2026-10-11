@@ -26,8 +26,12 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 - Mains can be combined in one item (Turkey + Pastrami), prices added. Note box is now "Anything special?".
 - Admin page checks for new orders every 15 seconds and when you switch back to it.
+- Admin table shows the date and time of each order under the name.
+- David's shop is connected to its live Google Sheet.
 
 ### Fixed
+- Rooms like "012" and notes like "3-12" were changed by Google Sheets into numbers/dates; all typed text is now stored as plain text.
+- Admin page: a box ticked during a refresh could flip back until the next refresh.
 - Demo mode: orders placed on the shop page now show on the admin page (were kept in one page's memory).
 
 ### Removed

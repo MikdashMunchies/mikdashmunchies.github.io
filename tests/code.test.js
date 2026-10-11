@@ -8,11 +8,18 @@ const vm = require('node:vm');
 
 const CODE = fs.readFileSync(path.join(__dirname, '..', 'apps-script', 'Code.gs'), 'utf8');
 
+// Behaves like Sheets for typed text: a leading ' means "keep as text" and is not part of the
+// stored value. `raw` keeps exactly what the script sent, to check the ' was added.
 function fakeSheet(rows) {
+  const raw = [];
   return {
     rows,
+    raw,
     getDataRange: () => ({ getValues: () => rows.map(r => [...r]) }),
-    appendRow: r => rows.push([...r]),
+    appendRow: r => {
+      raw.push([...r]);
+      rows.push([...r].map(v => (typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v))); // [...r]: plain array, not the vm's
+    },
     getLastRow: () => rows.length,
     getRange: (row, col) => ({ setValue: v => { rows[row - 1][col - 1] = v; }, insertCheckboxes() {} }),
   };
@@ -96,12 +103,15 @@ test('bad orders are rejected and not saved', () => {
   assert.strictEqual(sheets.Orders.rows.length, 1);
 });
 
-test('formula-looking text is escaped before it reaches the sheet', () => {
+test('typed text is stored as plain text: no formulas, no number or date guessing', () => {
   const { post, sheets } = load();
-  post({ ...good, name: '=HYPERLINK("http://x")', note: '+1 extra' });
-  const row = sheets.Orders.rows[1];
-  assert.strictEqual(row[2], '\'=HYPERLINK("http://x")');
-  assert.strictEqual(row[8], "'+1 extra");
+  post({ ...good, name: '=HYPERLINK("http://x")', room: '012', note: '3-12' });
+  const sent = sheets.Orders.raw[0];
+  assert.strictEqual(sent[2], '\'=HYPERLINK("http://x")'); // would run as a formula
+  assert.strictEqual(sent[3], "'012"); // would become the number 12
+  assert.strictEqual(sent[8], "'3-12"); // would become a date
+  assert.strictEqual(sheets.Orders.rows[1][3], '012');
+  assert.strictEqual(sent[6], 2); // numbers stay numbers
 });
 
 test('shop is open unless the sheet says no', () => {
