@@ -45,7 +45,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
   in the Sheet's checkbox column). No other statuses (Ethan, 2026-10-12: just name, room, order, Zelled).
-- One main item per order (+ any extras) × quantity 1–10. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
+- One item per order = one or more mains combined (turkey + pastrami; prices add up) + any extras, × quantity 1–10. No free-text "Other" (can't be priced); special requests go in the "Anything special?" note. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
 - The **server** prices every order from the Sheet's Menu tab; the browser total is display-only.
 - Most buyers are on phones, so design and test phone-first.
 
@@ -75,6 +75,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   sets it. When closed the site shows "Sold out!" and the server refuses orders. The site re-checks
   before showing Zelle details so nobody pays after closing.
 - **No emails** (Ethan, 2026-10-12: not needed). The admin page is where orders are seen.
+- **Admin auto-refresh:** every 15s and on tab focus; skipped while the tab is hidden or a tick is saving.
 - **Admin access:** same site, unlinked (`admin.html`, `noindex`). Hidden shortcut: tap the shop
   name 5 times within 1.5s (`shop.js`). The password is the real protection, not the hidden URL.
 
@@ -83,7 +84,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
 | GET | `?action=menu` | none | Menu + public settings, incl. `shop.open` |
-| POST | `{action:'order', name, room, note, main, extras, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
+| POST | `{action:'order', name, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
 | POST | `{action:'update', password, id, zelled}` | password | Tick or untick Zelled on one order |
@@ -110,7 +111,7 @@ Shops are at `http://localhost:5510/docs/<slug>/`.
 the folder). `code.test.js` runs `Code.gs` in `node:vm` with fake Google services;
 `build.test.js` checks the build and **fails if `docs/` is stale**.
 **Lint:** none.
-**Demo:** a shop with `"apiUrl": ""` uses its `demoMenu`, saves nothing, admin code `1234`.
+**Demo:** a shop with `"apiUrl": ""` uses its `demoMenu`; demo orders live in localStorage (`demoOrders:<slug>`) so shop and admin pages share them; admin code `1234`.
 
 ## Design Direction
 

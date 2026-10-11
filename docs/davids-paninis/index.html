@@ -44,7 +44,7 @@
   <main id="order" class="layout">
     <form id="order-form" class="builder" novalidate>
       <fieldset class="step">
-        <legend><span class="step-num"></span>Pick your meat</legend>
+        <legend><span class="step-num"></span>Pick your meat <span class="hint">pick one or more</span></legend>
         <div id="mains" class="tiles" aria-busy="true">
           <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
         </div>
@@ -79,7 +79,7 @@
           <input id="room" maxlength="20" required autocomplete="off" placeholder="e.g. 204">
         </div>
         <div class="field">
-          <label for="note">Note <span class="hint">optional</span></label>
+          <label for="note">Anything special? <span class="hint">optional</span></label>
           <textarea id="note" maxlength="200" rows="2" placeholder="No onions, extra crispy…"></textarea>
         </div>
       </fieldset>

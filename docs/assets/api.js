@@ -7,11 +7,9 @@ const money = n => '$' + Number(n).toFixed(2);
 
 // Display-only price. The real charge is worked out by the Google script.
 function priceOf(menu, sel) {
-  const main = menu.mains.find(m => m.name === sel.main);
-  if (!main) return 0;
   const cents = p => Math.round(p * 100);
-  const extras = menu.extras.filter(x => sel.extras.includes(x.name)).reduce((s, x) => s + cents(x.price), 0);
-  return ((cents(main.price) + extras) * sel.qty) / 100;
+  const picked = [...menu.mains.filter(m => sel.mains.includes(m.name)), ...menu.extras.filter(x => sel.extras.includes(x.name))];
+  return (picked.reduce((s, x) => s + cents(x.price), 0) * sel.qty) / 100;
 }
 
 async function api(action, data = {}) {
@@ -38,8 +36,11 @@ const DEMO_MENU = {
   extras: SHOP.demoMenu.extras,
 };
 
+// Demo orders are saved in localStorage (per shop) so an order placed on the shop page shows up
+// on the admin page, which is a separate page with its own memory.
+const DEMO_KEY = 'demoOrders:' + SHOP.slug;
 const [m1, m2 = m1] = DEMO_MENU.mains;
-const demoOrders = [
+const demoOrders = demoLoad() || [
   { id: 2, time: new Date(Date.now() - 8 * 60000).toISOString(), name: 'Avi Cohen', room: '204', item: m2.name, extras: '', qty: 2, total: m2.price * 2, note: '', zelled: false },
   { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', item: m1.name, extras: '', qty: 1, total: m1.price, note: '', zelled: true },
 ];
@@ -56,6 +57,22 @@ function demoOpen(value) {
   }
 }
 
+function demoLoad() {
+  try {
+    return JSON.parse(localStorage.getItem(DEMO_KEY));
+  } catch (err) {
+    return null;
+  }
+}
+
+function demoSave() {
+  try {
+    localStorage.setItem(DEMO_KEY, JSON.stringify(demoOrders));
+  } catch (err) {
+    // Private browsing: the demo still works on one page, it just isn't shared.
+  }
+}
+
 function demoApi(action, data) {
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   const fail = message => wait(null).then(() => { throw new Error(message); });
@@ -63,15 +80,19 @@ function demoApi(action, data) {
   if (action === 'order') {
     if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
     const total = priceOf(DEMO_MENU, data);
-    const id = demoOrders.length + 1;
-    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, item: data.main, extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
+    demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders)); // pick up the admin page's ticks
+    const id = Math.max(0, ...demoOrders.map(o => o.id)) + 1;
+    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
+    demoSave();
     return wait({ id, total });
   }
   if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
-  if (action === 'list') return wait({ orders: demoOrders.map(o => ({ ...o })), open: demoOpen() });
+  if (action === 'list') return wait({ orders: (demoLoad() || demoOrders).map(o => ({ ...o })), open: demoOpen() });
   if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
   if (action === 'update') {
+    demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders));
     demoOrders.find(o => o.id === data.id).zelled = data.zelled === true;
+    demoSave();
     return wait({ ok: true });
   }
 }

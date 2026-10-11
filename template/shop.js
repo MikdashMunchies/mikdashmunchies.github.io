@@ -25,18 +25,19 @@ async function init() {
     $('from-price').textContent = 'from ' + money(Math.min(...menu.mains.map(m => m.price)));
     $('from-price').hidden = false;
   }
-  $('mains').replaceChildren(...menu.mains.map((m, i) => option('radio', 'main', m, money(m.price), i === 0)));
+  $('mains').replaceChildren(...menu.mains.map((m, i) => option('tile', 'main', m, money(m.price), i === 0)));
   $('mains').removeAttribute('aria-busy');
-  $('extras').replaceChildren(...menu.extras.map(x => option('checkbox', 'extra', x, '+' + money(x.price))));
+  $('extras').replaceChildren(...menu.extras.map(x => option('chip', 'extra', x, '+' + money(x.price))));
   // A shop with no extras skips that step entirely.
   $('extras').closest('fieldset').hidden = !menu.extras.length;
   update();
 }
 
-function option(type, group, item, priceText, checked = false) {
+// Every option is a checkbox: buyers can combine mains (turkey + pastrami) and add any extras.
+function option(className, group, item, priceText, checked = false) {
   const label = document.createElement('label');
-  label.className = type === 'radio' ? 'tile' : 'chip';
-  const input = Object.assign(document.createElement('input'), { type, name: group, value: item.name, checked });
+  label.className = className;
+  const input = Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked });
   const name = Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name });
   const price = Object.assign(document.createElement('span'), { className: 'opt-price', textContent: priceText });
   label.append(input, name, price);
@@ -45,7 +46,7 @@ function option(type, group, item, priceText, checked = false) {
 
 function selection() {
   return {
-    main: document.querySelector('input[name=main]:checked')?.value,
+    mains: [...document.querySelectorAll('input[name=main]:checked')].map(i => i.value),
     extras: [...document.querySelectorAll('input[name=extra]:checked')].map(i => i.value),
     qty,
     name: $('name').value.trim(),
@@ -63,10 +64,10 @@ function line(text, amount) {
 
 function update() {
   const sel = selection();
-  const main = menu.mains.find(m => m.name === sel.main);
+  const mains = menu.mains.filter(m => sel.mains.includes(m.name));
   const lines = [];
-  if (main) {
-    lines.push(line(main.name + ' ' + SHOP.item, money(main.price)));
+  if (mains.length) {
+    lines.push(line(mains.map(m => m.name).join(' + ') + ' ' + SHOP.item, money(mains.reduce((s, m) => s + m.price, 0))));
     menu.extras.filter(x => sel.extras.includes(x.name)).forEach(x => lines.push(line('+ ' + x.name, money(x.price))));
     if (qty > 1) lines.push(line('× ' + qty, ''));
   }
@@ -89,7 +90,7 @@ $('order-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!menu) return;
   const sel = selection();
-  if (!sel.main) return fail('Pick one to start your ' + SHOP.item + '.');
+  if (!sel.mains.length) return fail('Pick at least one to start your ' + SHOP.item + '.');
   const missing = !sel.name ? 'name' : !sel.room ? 'room' : null;
   if (missing) {
     $(missing).setAttribute('aria-invalid', 'true');
@@ -151,7 +152,7 @@ $('place').addEventListener('click', async () => {
 $('again').addEventListener('click', () => {
   $('order-form').reset();
   qty = 1;
-  document.querySelector('input[name=main]').checked = true;
+  document.querySelector('input[name=main]').checked = true; // reset() unticks it
   update();
   show('order');
 });
