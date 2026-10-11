@@ -1,0 +1,72 @@
+# Setting up a shop (about 15 minutes)
+
+You do this once per customer. You need a Google account and a GitHub account.
+
+Use the Google account that should **get the order emails**. That is usually the seller's
+(David's), or yours if you run it for them.
+
+## 1. Make the Google Sheet + script
+
+1. Go to [sheets.new](https://sheets.new). Name it something like `David's Meat Paninis — Orders`.
+2. Click **Extensions → Apps Script**.
+3. Delete everything in the code box. Paste in everything from `apps-script/Code.gs`. Click the save icon.
+4. At the top, pick the function **`setup`** and click **Run**.
+   - Google asks for permission. Click **Review permissions**, pick the account, then
+     **Advanced → Go to (project name) (unsafe) → Allow**. ("Unsafe" just means Google
+     hasn't reviewed your own script. That's normal.)
+   - Go back to the Sheet. You'll see three new tabs: **Menu**, **Settings**, **Orders**.
+5. In the Apps Script page, click the gear (**Project Settings**). Scroll to
+   **Script Properties → Add script property**:
+   - Property: `ADMIN_PASSWORD`
+   - Value: a long password (12+ characters). This is the admin page login.
+   - Click **Save script properties**.
+
+## 2. Fill in the shop
+
+In the Sheet:
+
+- **Settings** tab: set `zelleTo` to the seller's Zelle phone number or email. You can also
+  change `shopName` and `tagline`. `orderEmail` is optional: leave it blank to send order
+  emails to the Google account that owns the Sheet.
+- **Menu** tab: one row per item. `Type` is `meat` or `add-on`. Prices are plain numbers
+  (`6.5`, not `$6.50`). The site picks up changes the next time someone opens it.
+- **Orders** tab: don't edit the headers. New orders show up here.
+
+## 3. Put the script online
+
+1. In Apps Script, click **Deploy → New deployment**.
+2. Click the gear next to "Select type" and choose **Web app**.
+3. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy**.
+4. Copy the **Web app URL** (it ends in `/exec`).
+5. Open `api.js` and paste it in: `const API_URL = 'https://script.google.com/macros/s/.../exec';`
+
+**Changed `Code.gs` later?** Use **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**.
+The URL stays the same. (A "New deployment" would give you a new URL.)
+
+## 4. Put the website online (GitHub Pages, free)
+
+1. Push this folder to a GitHub repo.
+2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)` → Save**.
+3. After about a minute, the site is live at `https://<your-username>.github.io/<repo-name>/`.
+   - The shop is that link.
+   - The admin page is that link + `admin.html`.
+
+The site has no secrets in it, so a public repo is fine. The password stays inside the Google script.
+
+## 5. Test it for real
+
+1. Open the shop on your phone and place an order.
+2. Check that the order email arrived and a row showed up in the **Orders** tab.
+3. Open `admin.html`, log in, and tap **Got their Zelle** on the order. Check that the Sheet
+   now says `Paid`.
+
+## Photo
+
+Swap the drawn panini for a real photo: save it as `panini.jpg` in this folder. Then in
+`index.html`, replace the `<figure class="hero-art">…</figure>` block with:
+
+```html
+<img class="hero-photo" src="panini.jpg" alt="David's pastrami panini, cut in half">
+```
+
+Best photo: the panini cut in half so the layers show, natural light, shot from slightly above.
