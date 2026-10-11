@@ -153,3 +153,14 @@ document.querySelectorAll('[data-copy]').forEach(button => button.addEventListen
   }
   setTimeout(() => { button.textContent = 'Copy'; }, 2000);
 }));
+
+// Hidden way in for the seller: tap the shop name 5 times quickly.
+// The admin page still needs the password; this only saves typing the address.
+let taps = 0;
+let tapTimer;
+document.querySelector('.shop-name').addEventListener('click', () => {
+  taps++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => { taps = 0; }, 1500);
+  if (taps >= 5) location.href = 'admin.html';
+});

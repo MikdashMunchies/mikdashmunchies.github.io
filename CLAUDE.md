@@ -61,7 +61,10 @@ orders in an admin page and by email. First customer: **David's Meat Paninis**.
   tagline, zelleTo, orderEmail), `Orders`. Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
   list/update. The browser keeps it in `sessionStorage` only.
-- **Email:** `MailApp` to `orderEmail` (or the Sheet owner). An email failure never loses the order.
+- **Email:** `MailApp` to `orderEmail` (or the Sheet owner), sent from the account that deployed
+  the script (~100/day on free Gmail). An email failure never loses the order.
+- **Admin access:** same site, unlinked (`admin.html`, `noindex`). Hidden shortcut: tap the shop
+  name 5 times within 1.5s (`shop.js`). The password is the real protection, not the hidden URL.
 
 ## APIs
 
