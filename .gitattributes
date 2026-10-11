@@ -1,0 +1,3 @@
+# Keep plain (LF) line endings on every machine, so docs/ always matches a fresh build.
+* text=auto eol=lf
+*.png binary

@@ -28,6 +28,8 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Admin page checks for new orders every 15 seconds and when you switch back to it.
 - Admin table shows the date and time of each order under the name.
 - David's shop is connected to its live Google Sheet.
+- Published on GitHub Pages under the MikdashMunchies organization: https://mikdashmunchies.github.io/davids-paninis/
+- QR code maker (`qr/make_qr.py`) that checks its own output; QR for David's shop.
 
 ### Fixed
 - Rooms like "012" and notes like "3-12" were changed by Google Sheets into numbers/dates; all typed text is now stored as plain text.

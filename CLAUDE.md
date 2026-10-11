@@ -23,8 +23,10 @@
 *Update this at the end of every session. A future session reads it first.*
 
 - **Current Phase:** David's Google back end is LIVE (Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Site works against it locally.
-- **Live:** https://ethan08madar-web.github.io/school-food-sites/davids-paninis/ (admin: + `admin.html`).
-  Repo https://github.com/ethan08madar-web/school-food-sites (public; Pages = `main` / `/docs`).
+- **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
+- **Live:** https://mikdashmunchies.github.io/davids-paninis/ (admin: + `admin.html`). QR: `qr/davids-paninis.png`.
+  Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
+  The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
 - **Current Goal:** Hand the link to David and take real orders
 - **Current Priority:** Put David's real Zelle + prices into the Sheet (Settings / Menu tabs)
 - **Current Blockers:** David's Zelle phone/email still "CHANGE ME" in the Sheet's Settings tab; prices are sample prices
@@ -109,6 +111,8 @@ app's preview tool may read launch.json from the session's original folder; copy
 Shops are at `http://localhost:5510/docs/<slug>/`.
 **Build:** `node build.js` after ANY change to `template/` or `shops/`, then commit `docs/`.
 **New shop:** `node build.js new <slug>` → fill in `shops/<slug>/shop.json` → `node build.js`.
+**QR code:** `python qr/make_qr.py <link> "<Shop name>" qr/<slug>.png` (needs `pip install --user "qrcode[pil]" opencv-python-headless`;
+the script scans its own output and fails if it doesn't decode to the link).
 **Test:** `node --test tests/build.test.js tests/code.test.js` (Node 24 wants file paths, not
 the folder). `code.test.js` runs `Code.gs` in `node:vm` with fake Google services;
 `build.test.js` checks the build and **fails if `docs/` is stale**.
@@ -165,6 +169,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
   viewing orders / ticking boxes, not prices or money.
 - Zelled checkboxes are inserted per new row, not pre-filled: pre-filled checkbox cells hold
   `FALSE`, count as data, and `appendRow` would skip past them to row 1000+.
+- `.gitattributes` forces LF: with Windows `core.autocrlf=true`, git rewrote `docs/` files with CRLF and the stale-`docs/` test failed on identical content.
 - Apps Script redeploys: **Manage deployments → New version** keeps the URL; "New deployment" changes it.
 
 ## Notes
