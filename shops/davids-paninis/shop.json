@@ -10,7 +10,7 @@
   "imageAlt": "A hot pressed meat panini cut in half, cheese melting out",
   "accent": "#D2341B",
   "highlight": "#FFC233",
-  "apiUrl": "",
+  "apiUrl": "https://script.google.com/macros/s/AKfycbxvJTUNcfZ6z0wW3GnGA8HL95yI7_qecD9fMuxKSQk-63ritXjUgATG6Rq9adHnNPsjRw/exec",
   "demoMenu": {
     "zelleTo": "(555) 123-4567",
     "mains": [

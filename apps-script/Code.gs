@@ -177,9 +177,11 @@ function cents_(price) {
   return Math.round(Number(price) * 100);
 }
 
-// Text starting with = + - @ would run as a formula in Sheets.
+// A leading ' tells Sheets "this is plain text": "=..." can't run as a formula, room "012" stays
+// "012" (not 12), and "3-12" stays text (not a date). The ' itself is not stored.
+// Empty strings stay empty (a lone ' would show up as a visible apostrophe-only cell).
 function safeCell_(v) {
-  return typeof v === 'string' && /^[=+\-@]/.test(v) ? "'" + v : v;
+  return typeof v === 'string' && v !== '' ? "'" + v : v;
 }
 
 function json_(obj) {

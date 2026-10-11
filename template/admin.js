@@ -5,6 +5,10 @@ const $ = id => document.getElementById(id);
 const PASSWORD_KEY = 'adminPassword:' + SHOP.slug;
 let password = sessionStorage.getItem(PASSWORD_KEY) || '';
 let shopOpen = true;
+let saving = 0;
+// Bumped on every tick. A refresh that started before a tick carries the old answer, so it is
+// thrown away instead of drawn (otherwise a just-ticked box would flip back until the next refresh).
+let ticks = 0;
 
 $('demo-banner').hidden = !DEMO;
 if (password) load();
@@ -22,7 +26,7 @@ $('refresh').addEventListener('click', load);
 // Check for new orders by itself: every 15 seconds, and right away when David switches back
 // to this tab. Skipped while hidden or mid-tick, so it never fights a checkbox being saved.
 const REFRESH_MS = 15000;
-let saving = 0;
+
 const autoRefresh = () => { if (password && !$('board').hidden && !document.hidden && !saving) load(); };
 setInterval(autoRefresh, REFRESH_MS);
 document.addEventListener('visibilitychange', autoRefresh);
@@ -37,7 +41,9 @@ $('logout').addEventListener('click', () => {
 async function load() {
   $('board-error').textContent = '';
   try {
+    const ticksAtStart = ticks;
     const { orders, open } = await api('list', { password });
+    if (ticksAtStart !== ticks) return;
     sessionStorage.setItem(PASSWORD_KEY, password);
     showBoard(true);
     renderOpen(open);
@@ -121,6 +127,7 @@ function row(o) {
   box.addEventListener('change', async () => {
     box.disabled = true;
     saving++;
+    ticks++;
     $('board-error').textContent = '';
     try {
       await api('update', { password, id: o.id, zelled: box.checked });
@@ -135,6 +142,12 @@ function row(o) {
   });
   check.append(box);
 
-  tr.append(el('td', 'col-name', o.name), el('td', 'col-room', o.room), order, check);
+  // When the order came in: the Sheet stamps the time automatically on every new order.
+  const who = el('td', 'col-name', o.name);
+  const when = new Date(o.time);
+  if (!isNaN(when)) {
+    who.append(el('span', 'order-when', when.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })));
+  }
+  tr.append(who, el('td', 'col-room', o.room), order, check);
   return tr;
 }
