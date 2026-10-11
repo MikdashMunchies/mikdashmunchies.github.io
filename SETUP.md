@@ -2,8 +2,8 @@
 
 You do this once per customer. You need a Google account and a GitHub account.
 
-Use the Google account that should **get the order emails**. That is usually the seller's
-(David's), or yours if you run it for them.
+Use whichever Google account should own the order Sheet: yours if you run it for the seller,
+or the seller's (David's) if they want it in their own Drive.
 
 ## 1. Make the Google Sheet + script
 
@@ -26,12 +26,8 @@ Use the Google account that should **get the order emails**. That is usually the
 In the Sheet:
 
 - **Settings** tab: set `zelleTo` to the seller's Zelle phone number or email. You can also
-  change `shopName` and `tagline`.
-- **Order emails:** put the seller's email in `orderEmail`. Every new order is emailed there.
-  Blank = it goes to the Google account that owns the Sheet. The email is sent **from** the
-  Google account that deployed the script, so if you set it up with your account, David's
-  emails come from you. The first one may land in Spam: mark it "Not spam" once. Google allows
-  about 100 emails a day on a free account, which is plenty.
+  change `shopName` and `tagline`. `open` is `yes` or `no`. The admin page's
+  **Close shop / Open shop** button changes it for you.
 - **Menu** tab: one row per item. `Type` is `meat` or `add-on`. Prices are plain numbers
   (`6.5`, not `$6.50`). The site picks up changes the next time someone opens it.
 - **Orders** tab: don't edit the headers. New orders show up here.
@@ -61,9 +57,10 @@ The site has no secrets in it, so a public repo is fine. The password stays insi
 ## 5. Test it for real
 
 1. Open the shop on your phone and place an order.
-2. Check that the order email arrived and a row showed up in the **Orders** tab.
-3. Open `admin.html`, log in, and tap **Got their Zelle** on the order. Check that the Sheet
+2. Check that a row showed up in the **Orders** tab.
+3. Open the admin page, log in, and tap **Got their Zelle** on the order. Check that the Sheet
    now says `Paid`.
+4. Tap **Close shop**, then open the shop page: it should say **Sold out!** Tap **Open shop** again.
 
 ## Photo
 

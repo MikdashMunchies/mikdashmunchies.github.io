@@ -58,17 +58,30 @@ const demoOrders = [
   { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', meat: 'Turkey', addons: '', qty: 1, total: 6, note: '', status: 'Paid' },
 ];
 
+// Kept in localStorage so closing the shop on the demo admin page shows on the demo shop page.
+function demoOpen(value) {
+  try {
+    if (value !== undefined) localStorage.setItem('demoOpen', value ? 'yes' : 'no');
+    return localStorage.getItem('demoOpen') !== 'no';
+  } catch (err) {
+    return true;
+  }
+}
+
 function demoApi(action, data) {
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
-  if (action === 'menu') return wait(DEMO_MENU);
+  const fail = message => wait(null).then(() => { throw new Error(message); });
+  if (action === 'menu') return wait({ ...DEMO_MENU, shop: { ...DEMO_MENU.shop, open: demoOpen() } });
   if (action === 'order') {
+    if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
     const total = priceOf(DEMO_MENU, data);
     const id = demoOrders.length + 1;
     demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, meat: data.meat, addons: data.addons.join(', '), qty: data.qty, total, note: data.note, status: 'Pending payment' });
     return wait({ id, total });
   }
-  if (data.password !== 'demo') return wait(null).then(() => { throw new Error('Wrong password. (Demo password: demo)'); });
-  if (action === 'list') return wait({ orders: demoOrders.map(o => ({ ...o })) });
+  if (data.password !== 'demo') return fail('Wrong password. (Demo password: demo)');
+  if (action === 'list') return wait({ orders: demoOrders.map(o => ({ ...o })), open: demoOpen() });
+  if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
   if (action === 'update') {
     demoOrders.find(o => o.id === data.id).status = data.status;
     return wait({ ok: true });

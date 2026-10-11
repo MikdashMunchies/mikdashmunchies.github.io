@@ -36,9 +36,10 @@ $('logout').addEventListener('click', () => {
 async function load() {
   $('board-error').textContent = '';
   try {
-    const { orders } = await api('list', { password });
+    const { orders, open } = await api('list', { password });
     sessionStorage.setItem('adminPassword', password);
     showBoard(true);
+    renderOpen(open);
     render(orders);
   } catch (err) {
     if (/password/i.test(err.message)) {
@@ -51,6 +52,30 @@ async function load() {
     }
   }
 }
+
+let shopOpen = true;
+
+function renderOpen(open) {
+  shopOpen = open;
+  $('shop-status').dataset.open = open;
+  $('shop-state').textContent = open ? 'Open' : 'Sold out';
+  $('shop-hint').textContent = open ? 'Taking orders' : 'The site says sold out. No new orders.';
+  $('toggle-open').textContent = open ? 'Close shop' : 'Open shop';
+  $('toggle-open').className = open ? 'btn btn-dark' : 'btn btn-primary';
+}
+
+$('toggle-open').addEventListener('click', async () => {
+  const b = $('toggle-open');
+  b.disabled = true;
+  $('board-error').textContent = '';
+  try {
+    renderOpen((await api('setOpen', { password, open: !shopOpen })).open);
+  } catch (err) {
+    $('board-error').textContent = err.message;
+  } finally {
+    b.disabled = false;
+  }
+});
 
 function showBoard(on) {
   $('login').hidden = on;

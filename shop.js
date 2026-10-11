@@ -20,6 +20,12 @@ async function init() {
     if (value) el.textContent = value;
   });
   if (menu.shop.shopName) document.title = menu.shop.shopName;
+  if (!menu.shop.open) {
+    document.body.classList.add('is-closed');
+    $('order').hidden = true;
+    $('closed').hidden = false;
+    return;
+  }
   if (menu.meats.length) {
     $('from-price').textContent = 'from ' + money(Math.min(...menu.meats.map(m => m.price)));
     $('from-price').hidden = false;
@@ -82,7 +88,7 @@ $('qty-plus').addEventListener('click', () => { qty = Math.min(MAX_QTY, qty + 1)
   $('form-error').textContent = '';
 }));
 
-$('order-form').addEventListener('submit', e => {
+$('order-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!menu) return;
   const sel = selection();
@@ -92,6 +98,15 @@ $('order-form').addEventListener('submit', e => {
     $(missing).setAttribute('aria-invalid', 'true');
     $(missing).focus();
     return fail(missing === 'name' ? 'Add your name so we know who it’s for.' : 'Add your room number so we know where to bring it.');
+  }
+  // Check again before showing Zelle details, so nobody pays after the seller closed the shop.
+  $('to-pay').disabled = true;
+  try {
+    if (!(await api('menu')).shop.open) return location.reload();
+  } catch (err) {
+    // Can't reach the shop: carry on. Placing the order will show the real error.
+  } finally {
+    $('to-pay').disabled = false;
   }
   $('pay-amount').textContent = money(priceOf(menu, sel));
   $('zelle-to').textContent = menu.shop.zelleTo || '';
