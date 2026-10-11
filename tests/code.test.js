@@ -48,7 +48,7 @@ function load({ open } = {}) {
   return { post, get, sheets };
 }
 
-const good = { action: 'order', name: 'Avi', room: '204', main: 'Pastrami', extras: ['Pickles', 'Extra meat'], qty: 2 };
+const good = { action: 'order', name: 'Avi', room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
 
 test('menu comes from the sheet', () => {
   const { get } = load();
@@ -66,6 +66,13 @@ test('order is priced by the server, ignoring a tampered total', () => {
   assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 20, '', false]);
 });
 
+test('several mains go in one item and their prices add up', () => {
+  const { post, sheets } = load();
+  const r = post({ ...good, mains: ['Turkey', 'Pastrami', 'Turkey'], extras: ['Pickles'], qty: 1 });
+  assert.strictEqual(r.total, 14); // 6 + 7.5 + 0.5; the repeated Turkey counts once
+  assert.strictEqual(sheets.Orders.rows[1][4], 'Turkey + Pastrami');
+});
+
 test('order ids go up', () => {
   const { post } = load();
   assert.strictEqual(post(good).id, 1);
@@ -75,7 +82,9 @@ test('order ids go up', () => {
 test('bad orders are rejected and not saved', () => {
   const { post, sheets } = load();
   const bad = [
-    { ...good, main: 'Lobster' },
+    { ...good, mains: ['Lobster'] },
+    { ...good, mains: [] },
+    { ...good, mains: 'Pastrami' },
     { ...good, extras: ['Gold flakes'] },
     { ...good, qty: 0 },
     { ...good, qty: 11 },

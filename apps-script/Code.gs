@@ -42,7 +42,7 @@ function setup() {
     sheet.setFrozenRows(1);
   };
   // Example rows. Replace them with the shop's real menu.
-  // Type "main" = pick one (e.g. the meat). Type "extra" = optional add-ons.
+  // Type "main" = the main choice (e.g. the meat; buyers can combine several). Type "extra" = optional add-ons.
   make('Menu', [
     ['Type', 'Name', 'Price'],
     ['main', 'Example item', 6],
@@ -84,18 +84,23 @@ function priceOrder_(menu, o) {
   const note = clean_(o.note, 200);
   if (!name) throw new Error('Please enter your name.');
   if (!room) throw new Error('Please enter your room number.');
-  const main = menu.mains.find(m => m.name === o.main);
-  if (!main) throw new Error('Please pick an item.');
-  const extras = [...new Set(Array.isArray(o.extras) ? o.extras : [])].map(n => {
-    const x = menu.extras.find(e => e.name === n);
-    if (!x) throw new Error('That extra is not on the menu anymore: ' + n);
-    return x;
-  });
+  // Mains can be combined (turkey + pastrami in one); their prices add up.
+  const mains = pickItems_(menu.mains, o.mains);
+  if (!mains.length) throw new Error('Please pick at least one item.');
+  const extras = pickItems_(menu.extras, o.extras);
   const qty = Number(o.qty);
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new Error('Quantity must be 1 to ' + MAX_QTY + '.');
   // Cents, so 0.1 + 0.2 style rounding never shows up on a bill.
-  const unit = cents_(main.price) + extras.reduce((sum, x) => sum + cents_(x.price), 0);
-  return { name, room, note, main: main.name, extras: extras.map(x => x.name), qty, total: (unit * qty) / 100 };
+  const unit = [...mains, ...extras].reduce((sum, x) => sum + cents_(x.price), 0);
+  return { name, room, note, mains: mains.map(m => m.name), extras: extras.map(x => x.name), qty, total: (unit * qty) / 100 };
+}
+
+function pickItems_(list, names) {
+  return [...new Set(Array.isArray(names) ? names : [])].map(n => {
+    const found = list.find(i => i.name === n);
+    if (!found) throw new Error('That is not on the menu anymore: ' + n);
+    return found;
+  });
 }
 
 function placeOrder_(body) {
@@ -111,7 +116,7 @@ function placeOrder_(body) {
     props.setProperty('NEXT_ID', id + 1);
     const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
     sheet.appendRow([
-      id, new Date(), order.name, order.room, order.main, order.extras.join(', '),
+      id, new Date(), order.name, order.room, order.mains.join(' + '), order.extras.join(', '),
       order.qty, order.total, order.note, false,
     ].map(safeCell_));
     // A real checkbox, so the seller can also tick "Zelled" right in the Sheet.

@@ -19,6 +19,14 @@ $('login').addEventListener('submit', async e => {
 
 $('refresh').addEventListener('click', load);
 
+// Check for new orders by itself: every 15 seconds, and right away when David switches back
+// to this tab. Skipped while hidden or mid-tick, so it never fights a checkbox being saved.
+const REFRESH_MS = 15000;
+let saving = 0;
+const autoRefresh = () => { if (password && !$('board').hidden && !document.hidden && !saving) load(); };
+setInterval(autoRefresh, REFRESH_MS);
+document.addEventListener('visibilitychange', autoRefresh);
+
 $('logout').addEventListener('click', () => {
   sessionStorage.removeItem(PASSWORD_KEY);
   password = '';
@@ -112,6 +120,7 @@ function row(o) {
   box.setAttribute('aria-label', `${o.name} paid with Zelle`);
   box.addEventListener('change', async () => {
     box.disabled = true;
+    saving++;
     $('board-error').textContent = '';
     try {
       await api('update', { password, id: o.id, zelled: box.checked });
@@ -121,6 +130,7 @@ function row(o) {
       $('board-error').textContent = err.message;
     } finally {
       box.disabled = false;
+      saving--;
     }
   });
   check.append(box);

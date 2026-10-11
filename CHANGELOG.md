@@ -24,6 +24,12 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Menu types are now `main` / `extra` (were `meat` / `add-on`); shop name and tagline moved from the Sheet to `shop.json`.
 - Step numbers count themselves, so a shop with no extras reads 1, 2, 3.
 
+- Mains can be combined in one item (Turkey + Pastrami), prices added. Note box is now "Anything special?".
+- Admin page checks for new orders every 15 seconds and when you switch back to it.
+
+### Fixed
+- Demo mode: orders placed on the shop page now show on the admin page (were kept in one page's memory).
+
 ### Removed
 - Order emails (not needed; admin page shows orders).
 - Seller pricing: $10 setup + $15/month.
