@@ -22,11 +22,11 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** Idea — folder just created
-- **Current Goal:** Decide what the first website looks like and who the first customer is
-- **Current Priority:** Brainstorm the offer (what businesses get, what it costs)
-- **Current Blockers:** None
-- **Recommended Next Task:** Run a brainstorm on the first customer and the site template
+- **Current Phase:** First customer site (David's Meat Paninis) built and verified in demo mode
+- **Current Goal:** Get it live: Google Sheet + script deployed, site on GitHub Pages
+- **Current Priority:** Ethan runs `SETUP.md` (needs his or David's Google account), then a real test order
+- **Current Blockers:** David's Zelle phone/email not provided yet (placeholder in the Sheet's Settings tab); no GitHub repo yet
+- **Recommended Next Task:** Walk Ethan through `SETUP.md`, paste the web app URL into `api.js`, do one real order end to end; swap in a real panini photo
 
 *Last updated: 2026-10-11*
 
@@ -34,60 +34,101 @@
 
 ## Purpose
 
-A business that builds and sells food-ordering websites to food-selling businesses at Ethan's school (student vendors, clubs, bake sales, etc.). Details still to be decided.
+Ethan's business: he builds and runs simple food-ordering websites for students who sell food at
+his school. Customers build an order on their phone, pay the seller by Zelle, and the seller sees
+orders in an admin page and by email. First customer: **David's Meat Paninis**.
 
 ## Business Rules
 
-Domain rules that are not inferable from the code. Pricing, tiers, limits, eligibility,
-edge cases the business cares about. This is the section that saves the most time later.
+- **What Ethan charges sellers:** $10 one-time setup + $15/month (set by Ethan 2026-10-11).
+  Optional custom domain +$15/yr (costs about $12).
+- **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
+  `Pending payment`; the seller taps **Got their Zelle** after checking their bank.
+- Statuses are exactly `Pending payment` → `Paid` → `Delivered` (Undo steps back one).
+- One panini style per order × quantity 1–10. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
+- The **server** prices every order from the Sheet's Menu tab; the browser total is display-only.
+- Most buyers are on phones, so design and test phone-first.
 
 ## Architecture
 
-- **Stack:**
-- **Frontend:** location, framework, routing, state
-- **Backend:** location, framework, entry point
-- **Data:** engine, location, key tables, isolation model
-- **Auth:** mechanism, where enforced
-
-Include what is client-side vs server-side, and what is persisted vs derived.
+- **Stack:** plain HTML/CSS/JS (no build, no npm deps) + one Google Apps Script web app.
+- **Frontend:** repo root. `index.html` + `shop.js` (customer flow: build → details → Zelle →
+  done), `admin.html` + `admin.js`, shared `style.css`, `api.js` (holds `API_URL`, the `api()`
+  fetch wrapper, `priceOf()`, and **demo mode** when `API_URL` is empty).
+- **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
+  Script) and deployed as a web app (Execute as Me, access Anyone).
+- **Data:** the Google Sheet. Tabs `Menu` (Type/Name/Price), `Settings` (Key/Value: shopName,
+  tagline, zelleTo, orderEmail), `Orders`. Order numbers come from Script Property `NEXT_ID`.
+- **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
+  list/update. The browser keeps it in `sessionStorage` only.
+- **Email:** `MailApp` to `orderEmail` (or the Sheet owner). An email failure never loses the order.
 
 ## APIs
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
+| GET | `?action=menu` | none | Menu + public settings (never `orderEmail`) |
+| POST | `{action:'order', name, room, note, meat, addons, qty}` | none | Validate, price, save, email → `{id,total}` |
+| POST | `{action:'list', password}` | password | All orders, newest first |
+| POST | `{action:'update', password, id, status}` | password | Change one order's status |
+
+POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
+Errors come back as `{ error: "message" }` with HTTP 200.
 
 ## Integrations
 
-Third-party services, what they're used for, where credentials come from, what breaks
-if they're unavailable.
+- **Google Apps Script / Sheets / MailApp:** free; runs under the Google account that deployed it.
+  If the script is down or the URL is wrong, the shop shows "Couldn't load the menu".
+- **Zelle:** link-out only (`https://www.zelle.com/get-started`). No link can pre-fill a payment,
+  because Zelle lives inside each bank's app.
+- **Google Fonts:** Shrikhand, Bricolage Grotesque, IBM Plex Mono.
 
 ## Project Conventions
 
-Conventions specific to this project that differ from or extend the global standards.
-Directory rules, naming, test placement, build/run commands.
-
-**Run:**
-**Build:**
-**Test:**
-**Lint:**
+**Run:** preview server `site` in `.claude/launch.json` (`python -m http.server 5510`). The desktop
+app's preview tool may read launch.json from the session's original folder; copy it there if needed.
+**Build:** none.
+**Test:** `node --test tests/code.test.js` (runs `Code.gs` in `node:vm` with fake Google services).
+Node 24 wants the file path, not the `tests/` folder.
+**Lint:** none.
+**Demo:** leave `API_URL` empty → sample menu, nothing saved, admin password `demo`.
 
 ## Design Direction
 
-Visual language, tokens, type scale, spacing, component patterns, light/dark support.
+White, bold, bouncy ("modern but fun", Ethan's words). Ink `#1A1410`, tomato `#D2341B` (main
+buttons), mustard `#FFC233` (selected / highlights), cream `#FFF5DE`, pickle `#2E8B4E`
+(done/delivered). Thick 2.5px ink borders + hard "sticker" shadow (`4px 4px 0`) that presses in on
+tap. Shrikhand only for the shop name and big moments; Bricolage Grotesque for everything else;
+IBM Plex Mono for prices and the order ticket. Hero: drawn SVG panini with steam + stickers. A
+real photo should replace it (see SETUP.md). Light mode only. Phone: total + Continue pinned to the bottom.
 
 ## Roadmap
 
-- [ ] **Milestone N — Name** — goal, deliverables
+- [x] **Milestone 1: David's Meat Paninis**: ordering, Zelle step, admin, email, demo mode
+- [ ] **Milestone 2: Go live**: deploy script + GitHub Pages, real test order, real photo
+- [ ] **Milestone 3: Second customer**: decide how to host many shops (folder per shop vs. one
+  repo per shop), and make name/colors easy to change per shop
 
 ## Important Decisions
 
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
+| 2026-10-11 | Google Sheet + Apps Script back end, static site on GitHub Pages | $0, never sleeps, built-in email, the seller edits the menu in the Sheet | Render + Supabase (free Render sleeps ~50s; 3 accounts), Supabase only (email needs another service), Formspree (50/month cap, no admin) |
+| 2026-10-11 | Server recomputes price from the Menu tab | Anyone can edit browser JS to pay $0.01 | Trusting the browser's total |
+| 2026-10-11 | Order is saved only after "I sent it" | Matches Yeshivah4All's Zelle flow; fewer junk orders | Saving before showing Zelle details |
+| 2026-10-11 | Demo mode when `API_URL` is empty | Preview without Google; show prospects a working demo | Separate mock server |
+| 2026-10-11 | Redesign from toasty-gold hero to white/bold/sticker style | Ethan: more white space, bold, more jump, modern but fun | Gold grill-mark hero (v1) |
 
 ## Implementation Notes
 
-Non-obvious details, known workarounds, gotchas, and things that look wrong but are correct.
+- `safeCell_` prefixes `'` to text starting with `= + - @` so names can't run as Sheet formulas.
+- On phones, `.ticket-paper` must not have a `filter` or `transform`: either one makes the
+  `position: fixed` checkout bar stick to the ticket instead of the screen.
+- `.layout`/`.tiles` set `display`, so `[hidden] { display:none !important }` is needed for views to hide.
+- Admin password: no lockout after wrong guesses (`ponytail:` note in Code.gs). Use 12+ characters.
+- Apps Script redeploys: **Manage deployments → New version** keeps the URL; "New deployment" changes it.
 
 ## Notes
 
-Anything that doesn't fit above. Open questions, ideas, parked work.
+- Spec and plan: `docs/superpowers/specs/2026-10-11-paninis-site-design.md`, `docs/superpowers/plans/2026-10-11-paninis-site.md`.
+- Ideas parked: different paninis in one order, pickup times, card payments, dark mode.
