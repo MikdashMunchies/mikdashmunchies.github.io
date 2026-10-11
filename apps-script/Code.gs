@@ -2,7 +2,7 @@
 // Deploy as a web app: Execute as "Me", access "Anyone". See SETUP.md.
 
 const MAX_QTY = 10;
-const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Zelled'];
+const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled'];
 const ZELLED_COL = 10;
 
 function doGet(e) {
@@ -41,23 +41,17 @@ function setup() {
     sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
     sheet.setFrozenRows(1);
   };
+  // Example rows. Replace them with the shop's real menu.
+  // Type "main" = pick one (e.g. the meat). Type "extra" = optional add-ons.
   make('Menu', [
     ['Type', 'Name', 'Price'],
-    ['meat', 'Turkey', 6],
-    ['meat', 'Pastrami', 7],
-    ['meat', 'Salami', 6.5],
-    ['meat', 'Roast beef', 7],
-    ['add-on', 'Extra meat', 2],
-    ['add-on', 'Pickles', 0.5],
-    ['add-on', 'Grilled onions', 0.5],
-    ['add-on', 'Spicy mayo', 0.5],
-    ['add-on', 'Avocado', 1],
+    ['main', 'Example item', 6],
+    ['main', 'Another item', 7],
+    ['extra', 'Example extra', 0.5],
   ]);
   make('Settings', [
     ['Key', 'Value'],
-    ['shopName', "David's Meat Paninis"],
-    ['tagline', 'Pressed hot, delivered to your classroom.'],
-    ['zelleTo', 'CHANGE ME — David\'s Zelle phone or email'],
+    ['zelleTo', "CHANGE ME: the seller's Zelle phone or email"],
     ['open', 'yes'],
   ]);
   make('Orders', [ORDER_HEADERS]);
@@ -67,13 +61,13 @@ function setup() {
 
 function getMenu_() {
   const ss = SpreadsheetApp.getActive();
-  const menu = { shop: {}, meats: [], addons: [] };
+  const menu = { shop: {}, mains: [], extras: [] };
   rows_(ss.getSheetByName('Menu')).forEach(([type, name, price]) => {
     const item = { name: String(name).trim(), price: Number(price) };
     if (!item.name || !(item.price >= 0)) return;
     const t = String(type).trim().toLowerCase();
-    if (t === 'meat') menu.meats.push(item);
-    else if (t === 'add-on' || t === 'addon') menu.addons.push(item);
+    if (t === 'main') menu.mains.push(item);
+    else if (t === 'extra') menu.extras.push(item);
   });
   rows_(ss.getSheetByName('Settings')).forEach(([key, value]) => {
     if (key) menu.shop[String(key).trim()] = String(value).trim();
@@ -90,18 +84,18 @@ function priceOrder_(menu, o) {
   const note = clean_(o.note, 200);
   if (!name) throw new Error('Please enter your name.');
   if (!room) throw new Error('Please enter your room number.');
-  const meat = menu.meats.find(m => m.name === o.meat);
-  if (!meat) throw new Error('Please pick a meat.');
-  const addons = [...new Set(Array.isArray(o.addons) ? o.addons : [])].map(n => {
-    const a = menu.addons.find(x => x.name === n);
-    if (!a) throw new Error('That add-on is not on the menu anymore: ' + n);
-    return a;
+  const main = menu.mains.find(m => m.name === o.main);
+  if (!main) throw new Error('Please pick an item.');
+  const extras = [...new Set(Array.isArray(o.extras) ? o.extras : [])].map(n => {
+    const x = menu.extras.find(e => e.name === n);
+    if (!x) throw new Error('That extra is not on the menu anymore: ' + n);
+    return x;
   });
   const qty = Number(o.qty);
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new Error('Quantity must be 1 to ' + MAX_QTY + '.');
   // Cents, so 0.1 + 0.2 style rounding never shows up on a bill.
-  const unit = cents_(meat.price) + addons.reduce((sum, a) => sum + cents_(a.price), 0);
-  return { name, room, note, meat: meat.name, addons: addons.map(a => a.name), qty, total: (unit * qty) / 100 };
+  const unit = cents_(main.price) + extras.reduce((sum, x) => sum + cents_(x.price), 0);
+  return { name, room, note, main: main.name, extras: extras.map(x => x.name), qty, total: (unit * qty) / 100 };
 }
 
 function placeOrder_(body) {
@@ -117,7 +111,7 @@ function placeOrder_(body) {
     props.setProperty('NEXT_ID', id + 1);
     const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
     sheet.appendRow([
-      id, new Date(), order.name, order.room, order.meat, order.addons.join(', '),
+      id, new Date(), order.name, order.room, order.main, order.extras.join(', '),
       order.qty, order.total, order.note, false,
     ].map(safeCell_));
     // A real checkbox, so the seller can also tick "Zelled" right in the Sheet.
@@ -133,7 +127,7 @@ function listOrders_() {
   return rows_(SpreadsheetApp.getActive().getSheetByName('Orders')).map(r => ({
     id: r[0],
     time: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
-    name: r[2], room: r[3], meat: r[4], addons: r[5], qty: r[6], total: r[7], note: r[8],
+    name: r[2], room: r[3], item: r[4], extras: r[5], qty: r[6], total: r[7], note: r[8],
     zelled: r[9] === true || String(r[9]).toUpperCase() === 'TRUE',
   })).reverse();
 }

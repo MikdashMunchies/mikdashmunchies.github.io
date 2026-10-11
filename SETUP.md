@@ -1,72 +1,94 @@
-# Setting up a shop (about 15 minutes)
+# Running the shops
 
-You do this once per customer. You need a Google account and a GitHub account.
+Every shop uses the same core (`template/` + `apps-script/Code.gs`). Only its details differ:
 
-Use whichever Google account should own the order Sheet: yours if you run it for the seller,
-or the seller's (David's) if they want it in their own Drive.
+| Detail | Where it lives | Who changes it |
+|---|---|---|
+| Name, tagline, words ("Pick your meat"), colors, picture | `shops/<shop>/shop.json` + picture file | You |
+| Menu and prices, Zelle number, open/sold out | That shop's Google Sheet (and the admin page) | The seller or you |
+| Orders | That shop's Google Sheet, viewed on the admin page | Saved automatically |
 
-## 1. Make the Google Sheet + script
+The website itself can't store anything. Each shop's Google Sheet is where its orders are saved.
+The seller never has to open the Sheet: the admin page shows everything.
 
-1. Go to [sheets.new](https://sheets.new). Name it something like `David's Meat Paninis — Orders`.
-2. Click **Extensions → Apps Script**.
-3. Delete everything in the code box. Paste in everything from `apps-script/Code.gs`. Click the save icon.
-4. At the top, pick the function **`setup`** and click **Run**.
-   - Google asks for permission. Click **Review permissions**, pick the account, then
-     **Advanced → Go to (project name) (unsafe) → Allow**. ("Unsafe" just means Google
-     hasn't reviewed your own script. That's normal.)
-   - Go back to the Sheet. You'll see three new tabs: **Menu**, **Settings**, **Orders**.
-5. The admin code is now **1234** (`setup` set it). To change it: in Apps Script click the gear
-   (**Project Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.
-   There's no lockout after wrong guesses, so a longer code is safer.
+## Add a new shop (about 20 minutes)
 
-## 2. Fill in the shop
+### 1. Make its settings file
 
-In the Sheet:
-
-- **Settings** tab: set `zelleTo` to the seller's Zelle phone number or email. You can also
-  change `shopName` and `tagline`. `open` is `yes` or `no`. The admin page's
-  **Close shop / Open shop** button changes it for you.
-- **Menu** tab: one row per item. `Type` is `meat` or `add-on`. Prices are plain numbers
-  (`6.5`, not `$6.50`). The site picks up changes the next time someone opens it.
-- **Orders** tab: don't edit the headers. New orders show up here.
-
-## 3. Put the script online
-
-1. In Apps Script, click **Deploy → New deployment**.
-2. Click the gear next to "Select type" and choose **Web app**.
-3. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy**.
-4. Copy the **Web app URL** (it ends in `/exec`).
-5. Open `api.js` and paste it in: `const API_URL = 'https://script.google.com/macros/s/.../exec';`
-
-**Changed `Code.gs` later?** Use **Deploy → Manage deployments → pencil icon → Version: New version → Deploy**.
-The URL stays the same. (A "New deployment" would give you a new URL.)
-
-## 4. Put the website online (GitHub Pages, free)
-
-1. Push this folder to a GitHub repo.
-2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)` → Save**.
-3. After about a minute, the site is live at `https://<your-username>.github.io/<repo-name>/`.
-   - The shop is that link.
-   - The admin page is on the same site, not linked anywhere. Get there by **tapping the shop
-     name 5 times quickly**, or by adding `admin.html` to the end of the link. It still needs the password.
-
-The site has no secrets in it, so a public repo is fine. The password stays inside the Google script.
-
-## 5. Test it for real
-
-1. Open the shop on your phone and place an order.
-2. Check that a row showed up in the **Orders** tab.
-3. Open the admin page, enter the code, and tick **Zelled** on the order. Check that the box in
-   the Sheet's **Zelled** column is ticked too.
-4. Tap **Close shop**, then open the shop page: it should say **Sold out!** Tap **Open shop** again.
-
-## Photo
-
-Swap the drawn panini for a real photo: save it as `panini.jpg` in this folder. Then in
-`index.html`, replace the `<figure class="hero-art">…</figure>` block with:
-
-```html
-<img class="hero-photo" src="panini.jpg" alt="David's pastrami panini, cut in half">
+```bash
+node build.js new sarahs-cookies
 ```
 
-Best photo: the panini cut in half so the layers show, natural light, shot from slightly above.
+Open `shops/sarahs-cookies/shop.json` and fill it in:
+
+- `name`, `tagline`: shown big at the top.
+- `item`: what one order is called ("panini", "cookie box"). Used in "Build your ___".
+- `mainLabel`: step 1's title ("Pick your meat"). `extrasLabel`: step 2's title ("Add-ons").
+- `notePlaceholder`, `sticker`: small touches.
+- `image`: a picture file you put in the same folder (`photo.jpg`). Leave it `""` for no picture.
+  Best photo: the food cut open so you can see inside, natural light, shot from slightly above.
+- `accent` (buttons) and `highlight` (selected items): any colors, like `#6D3BD2`.
+- `apiUrl`: leave `""` for now (step 3). While it's empty the shop runs as a **demo** using `demoMenu`.
+
+Then build and look at it:
+
+```bash
+node build.js
+```
+
+The shop is now in `docs/sarahs-cookies/`.
+
+### 2. Make its Google Sheet + script
+
+Use whichever Google account should own the orders: yours if you run it for the seller.
+
+1. Go to [sheets.new](https://sheets.new). Name it like `Sarah's Cookies — Orders`.
+2. **Extensions → Apps Script**. Delete everything in the code box, paste in all of
+   `apps-script/Code.gs`, and click save.
+3. At the top, pick the function **`setup`** and click **Run**. Google asks for permission:
+   **Review permissions → pick the account → Advanced → Go to (project) (unsafe) → Allow**.
+   ("Unsafe" just means Google hasn't reviewed your own script. That's normal.)
+4. Back in the Sheet there are three new tabs:
+   - **Menu**: one row per item. `Type` is `main` (pick one, e.g. the meat) or `extra`
+     (optional add-ons). Prices are plain numbers (`6.5`). Replace the example rows.
+   - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
+   - **Orders**: new orders show up here. Don't change the headers.
+5. The admin code is **1234**. To change it: in Apps Script click the gear (**Project
+   Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.
+   There's no lockout after wrong guesses, so a longer code is safer.
+
+### 3. Put the script online and connect it
+
+1. In Apps Script: **Deploy → New deployment** → gear → **Web app**.
+2. **Execute as: Me**, **Who has access: Anyone** → **Deploy**. Copy the **Web app URL** (ends in `/exec`).
+3. Paste it into the shop's `shop.json` as `"apiUrl": "https://script.google.com/macros/s/.../exec"`.
+4. Run `node build.js`.
+
+Changed `Code.gs` later? **Deploy → Manage deployments → pencil → Version: New version → Deploy**.
+The URL stays the same. (A "New deployment" would give a new URL.)
+
+### 4. Publish
+
+Commit and push. The first time only, on GitHub: **Settings → Pages → Deploy from a branch →
+`main` / `/docs` → Save**. After about a minute every shop is live:
+
+- Shop: `https://<your-username>.github.io/<repo>/sarahs-cookies/`
+- Admin: tap the shop name **5 times quickly**, or add `admin.html` to the end of that link.
+
+### 5. Test it for real
+
+1. Place an order on your phone. Check a row shows up in the Sheet's **Orders** tab.
+2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too.
+3. Tap **Close shop**: the shop page should say **Sold out!** Then **Open shop** again.
+
+## Changing the core (affects every shop)
+
+Edit files in `template/` or `apps-script/Code.gs`, then:
+
+```bash
+node build.js
+node --test tests/build.test.js tests/code.test.js
+```
+
+The tests fail if you forgot `node build.js`. Push, and every shop updates at once. If you changed
+`Code.gs`, each shop's script also needs the new code pasted in and a **New version** deployed.

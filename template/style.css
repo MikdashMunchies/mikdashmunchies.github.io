@@ -1,9 +1,9 @@
 :root {
   --ink: #1A1410;
   --ink-soft: #5B4F47;
-  --tomato: #D2341B;
-  --tomato-dark: #A9260F;
-  --mustard: #FFC233;
+  /* Each shop overrides --accent and --highlight from its shop.json (see template/index.html). */
+  --accent: #D2341B;
+  --highlight: #FFC233;
   --cream: #FFF5DE;
   --pickle: #2E8B4E;
   --white: #FFFFFF;
@@ -35,7 +35,7 @@ h1, h2 { margin: 0; line-height: 1.05; }
 h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .mono { font-family: var(--mono); }
 .hint { font-weight: 400; font-size: 0.8em; color: var(--ink-soft); letter-spacing: 0; }
-:focus-visible { outline: 3px solid var(--tomato); outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 /* ---------- Buttons: chunky, with a sticker shadow that presses in ---------- */
 
@@ -57,8 +57,8 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .btn:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: var(--pop-big); }
 .btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn-primary { background: var(--tomato); color: var(--white); }
-.btn-dark { background: var(--ink); color: var(--mustard); }
+.btn-primary { background: var(--accent); color: var(--white); }
+.btn-dark { background: var(--ink); color: var(--highlight); }
 .btn-big { min-height: 60px; padding: 0 32px; font-size: 1.15rem; }
 .btn-wide { width: 100%; }
 
@@ -79,7 +79,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .demo-banner {
   margin: 0;
   padding: 10px var(--gutter);
-  background: var(--mustard);
+  background: var(--highlight);
   border-block: var(--border);
   font: 600 0.85rem var(--mono);
   text-align: center;
@@ -116,11 +116,9 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .tagline { margin: 22px 0 30px; font-size: 1.15rem; max-width: 28ch; color: var(--ink-soft); }
 
 .hero-art { position: relative; margin: 28px 0 0; animation: drop .9s var(--bounce) .15s both; }
-.panini { display: block; width: 100%; max-width: 460px; margin: 0 auto; animation: bob 3.2s ease-in-out 1s infinite; overflow: visible; }
-.steam path { animation: steam 2.4s ease-in-out infinite; }
-.steam path:nth-child(2) { animation-delay: .5s; }
-.steam path:nth-child(3) { animation-delay: 1s; }
-.hero-photo { display: block; width: 100%; border: var(--border); border-radius: 28px; box-shadow: var(--pop-big); }
+.hero-img { display: block; width: 100%; max-width: 460px; margin: 0 auto; border-radius: 28px; animation: bob 3.2s ease-in-out 1s infinite; }
+/* A shop with no picture ("image": "") just shows the text side. */
+.hero-art:has(.hero-img[src='']) { display: none; }
 
 .sticker {
   position: absolute;
@@ -134,13 +132,12 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   font: 800 0.95rem/1.05 var(--sans);
   animation: pop .5s var(--bounce) both;
 }
-.sticker-hot { top: 0; left: 0; width: 88px; height: 88px; background: var(--mustard); rotate: -12deg; animation-delay: .7s; }
-.sticker-price { right: 0; bottom: 14%; padding: 0 16px; height: 50px; border-radius: 999px; background: var(--tomato); color: var(--white); rotate: 7deg; animation-delay: .85s; font-family: var(--mono); }
+.sticker-hot { top: 0; left: 0; width: 88px; height: 88px; background: var(--highlight); rotate: -12deg; animation-delay: .7s; }
+.sticker-price { right: 0; bottom: 14%; padding: 0 16px; height: 50px; border-radius: 999px; background: var(--accent); color: var(--white); rotate: 7deg; animation-delay: .85s; font-family: var(--mono); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 @keyframes drop { from { opacity: 0; transform: translateY(-40px) rotate(-4deg); } }
 @keyframes bob { 50% { transform: translateY(-8px); } }
-@keyframes steam { 0% { opacity: 0; transform: translateY(8px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 @keyframes pop { from { opacity: 0; scale: .3; } }
 
 /* ---------- Order builder ---------- */
@@ -148,6 +145,10 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .layout { max-width: 1120px; margin: 0 auto; padding: 32px var(--gutter) 0; display: grid; gap: 8px; }
 
 .step { border: 0; margin: 0 0 52px; padding: 0; min-width: 0; }
+/* Steps number themselves, so a hidden step (a shop with no extras) never leaves a gap. */
+.builder { counter-reset: step; }
+.step { counter-increment: step; }
+.step-num::before { content: counter(step); }
 .step legend {
   display: flex;
   align-items: center;
@@ -166,7 +167,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   height: 36px;
   border: var(--border);
   border-radius: 50%;
-  background: var(--mustard);
+  background: var(--highlight);
   font: 600 1rem var(--mono);
   letter-spacing: 0;
 }
@@ -185,7 +186,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .tile input, .chip input { position: absolute; opacity: 0; pointer-events: none; }
 .tile:hover, .chip:hover { transform: translate(-2px, -2px); box-shadow: var(--pop-big); }
 .tile:active, .chip:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
-.tile:has(input:focus-visible), .chip:has(input:focus-visible) { outline: 3px solid var(--tomato); outline-offset: 4px; }
+.tile:has(input:focus-visible), .chip:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 4px; }
 
 .tile {
   display: flex;
@@ -198,7 +199,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 }
 .tile .opt-name { font-weight: 800; font-size: 1.15rem; line-height: 1.15; padding-right: 26px; }
 .tile .opt-price { font: 600 0.95rem var(--mono); color: var(--ink-soft); }
-.tile:has(input:checked) { background: var(--mustard); }
+.tile:has(input:checked) { background: var(--highlight); }
 .tile:has(input:checked) .opt-price { color: var(--ink); }
 /* Check badge pops in on the picked meat */
 .tile::after {
@@ -213,7 +214,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   background: var(--white);
 }
 .tile:has(input:checked)::after {
-  background: var(--tomato) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5 10 17.5 19 7'/%3E%3C/svg%3E") center / 15px no-repeat;
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5 10 17.5 19 7'/%3E%3C/svg%3E") center / 15px no-repeat;
   animation: pop .35s var(--bounce);
 }
 
@@ -230,7 +231,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 }
 .chip .opt-price { font: 400 0.85rem var(--mono); color: var(--ink-soft); }
 .chip:has(input:checked) { background: var(--ink); color: var(--white); }
-.chip:has(input:checked) .opt-price { color: var(--mustard); }
+.chip:has(input:checked) .opt-price { color: var(--highlight); }
 
 .skeleton {
   height: 96px;
@@ -262,7 +263,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   cursor: pointer;
   transition: transform .15s var(--bounce), background-color .15s ease;
 }
-.stepper button:hover:not(:disabled) { background: var(--mustard); }
+.stepper button:hover:not(:disabled) { background: var(--highlight); }
 .stepper button:active:not(:disabled) { transform: scale(.88); }
 .stepper button:disabled { opacity: .3; cursor: not-allowed; }
 .stepper svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
@@ -283,7 +284,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 }
 .field textarea { resize: vertical; }
 .field input:focus, .field textarea:focus { outline: none; box-shadow: var(--pop); }
-.field input[aria-invalid='true'] { border-color: var(--tomato); box-shadow: 4px 4px 0 var(--tomato); }
+.field input[aria-invalid='true'] { border-color: var(--accent); box-shadow: 4px 4px 0 var(--accent); }
 
 /* ---------- The order ticket ---------- */
 
@@ -308,7 +309,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .ticket-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; font-weight: 600; }
 .ticket-total strong { font-size: 1.6rem; }
 .checkout { border-top: 2px dashed var(--line); padding-top: 14px; }
-.error { margin: 0 0 12px; color: var(--tomato); font: 600 0.95rem/1.4 var(--sans); }
+.error { margin: 0 0 12px; color: var(--accent); font: 600 0.95rem/1.4 var(--sans); }
 .error:empty { display: none; }
 
 /* Phones: total + button pinned to the bottom of the screen. */
@@ -330,7 +331,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   .checkout .btn { flex: 1; padding: 0 16px; }
 }
 
-/* Bigger screens: text beside the panini, ticket sticks on the right. */
+/* Bigger screens: text beside the picture, ticket sticks on the right. */
 @media (min-width: 860px) {
   :root { --gutter: 40px; }
   .hero { padding-top: 72px; padding-bottom: 56px; }
@@ -378,10 +379,10 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   height: 34px;
   border: var(--border);
   border-radius: 50%;
-  background: var(--mustard);
+  background: var(--highlight);
   font: 600 0.95rem var(--mono);
 }
-#pay-amount { font-size: 1.25em; background: var(--mustard); padding: 0 6px; border-radius: 6px; }
+#pay-amount { font-size: 1.25em; background: var(--highlight); padding: 0 6px; border-radius: 6px; }
 
 .btn-zelle {
   display: flex;
@@ -449,7 +450,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   padding: 6px 14px;
   border: var(--border);
   border-radius: 999px;
-  background: var(--mustard);
+  background: var(--highlight);
   font-weight: 600;
 }
 .panel-done p { font-size: 1.15rem; margin: 0 0 32px; color: var(--ink-soft); }
@@ -465,7 +466,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   translate: -50% 0;
   width: 140px;
   height: 140px;
-  background: var(--tomato);
+  background: var(--accent);
   color: var(--white);
   font: 400 1.6rem/1 var(--display);
   rotate: -14deg;
@@ -473,8 +474,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   animation-delay: .5s;
 }
 .is-closed .sticker-hot, .is-closed .sticker-price, .is-closed .hero .btn-big { display: none; }
-.is-closed .panini { filter: grayscale(.7); opacity: .6; animation: none; }
-.is-closed .steam { display: none; }
+.is-closed .hero-img { filter: grayscale(.7); opacity: .6; animation: none; }
 .panel-closed { text-align: center; padding-top: 8px; }
 .panel-closed h2 { font-family: var(--display); font-weight: 400; font-size: 2.6rem; margin-bottom: 12px; }
 .panel-closed p { font-size: 1.15rem; color: var(--ink-soft); margin: 0; }
@@ -497,7 +497,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .shop-status p { margin: 0; }
 .shop-status-label { font: 600 0.8rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); }
 .shop-status-value { font: 400 1.8rem/1.1 var(--display); color: var(--pickle); }
-.shop-status[data-open='false'] .shop-status-value { color: var(--tomato); }
+.shop-status[data-open='false'] .shop-status-value { color: var(--accent); }
 .shop-status-hint { font-size: 0.9rem; color: var(--ink-soft); }
 .shop-status .btn { flex: none; min-height: 48px; padding: 0 18px; font-size: 0.95rem; box-shadow: 3px 3px 0 var(--ink); }
 

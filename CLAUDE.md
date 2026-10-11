@@ -22,13 +22,13 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** First customer site (David's Meat Paninis) built and verified in demo mode
-- **Current Goal:** Get it live: Google Sheet + script deployed, site on GitHub Pages
-- **Current Priority:** Ethan runs `SETUP.md` (needs his or David's Google account), then a real test order
-- **Current Blockers:** David's Zelle phone/email not provided yet (placeholder in the Sheet's Settings tab); no GitHub repo yet
-- **Recommended Next Task:** Walk Ethan through `SETUP.md`, paste the web app URL into `api.js`, do one real order end to end; swap in a real panini photo
+- **Current Phase:** Reusable template done; first shop (David's Meat Paninis) verified in demo mode
+- **Current Goal:** Get David's shop live: Google Sheet + script deployed, site on GitHub Pages
+- **Current Priority:** Ethan runs `SETUP.md` steps 2–5 for David (he opened Google Sheets sign-in on 2026-10-12)
+- **Current Blockers:** David's Zelle phone/email not provided yet; no GitHub repo yet
+- **Recommended Next Task:** Walk Ethan through the Google setup, put the web app URL in `shops/davids-paninis/shop.json` → `node build.js`, one real order end to end; swap in a real panini photo
 
-*Last updated: 2026-10-11*
+*Last updated: 2026-10-12*
 
 ---
 
@@ -45,20 +45,30 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
   in the Sheet's checkbox column). No other statuses (Ethan, 2026-10-12: just name, room, order, Zelled).
-- One panini style per order × quantity 1–10. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
+- One main item per order (+ any extras) × quantity 1–10. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
 - The **server** prices every order from the Sheet's Menu tab; the browser total is display-only.
 - Most buyers are on phones, so design and test phone-first.
 
 ## Architecture
 
-- **Stack:** plain HTML/CSS/JS (no build, no npm deps) + one Google Apps Script web app.
-- **Frontend:** repo root. `index.html` + `shop.js` (customer flow: build → details → Zelle →
-  done), `admin.html` + `admin.js`, shared `style.css`, `api.js` (holds `API_URL`, the `api()`
-  fetch wrapper, `priceOf()`, and **demo mode** when `API_URL` is empty).
+- **Stack:** plain HTML/CSS/JS (no npm deps) + one Google Apps Script web app per shop.
+  A tiny `build.js` (Node stdlib only) stamps out one site per shop.
+- **Template (shared core):** `template/`. `index.html` + `shop.js` (customer flow: build →
+  details → Zelle → done), `admin.html` + `admin.js`, `style.css`, `api.js` (the `api()` fetch
+  wrapper, `priceOf()`, and **demo mode** when the shop has no `apiUrl`). Pages hold `{{blanks}}`.
+- **Shops:** `shops/<slug>/shop.json` (name, tagline, item word, step labels, sticker, picture,
+  `accent`/`highlight` colors, `apiUrl`, `demoMenu`) + its picture. `template/shop.example.json`
+  is the starting point (`node build.js new <slug>`).
+- **Build:** `node build.js` → `docs/` (GitHub Pages serves `/docs`): `docs/assets/` (shared
+  CSS/JS, once) + `docs/<slug>/` (filled `index.html`/`admin.html`, `config.js` = `const SHOP =
+  {...shop.json, slug}`, picture). Values are HTML-escaped; a missing `{{key}}` fails the build.
+  `docs/` is generated: never edit it by hand. All shops share one origin, so browser storage
+  keys are per shop (`adminPassword:<slug>`, `demoOpen:<slug>`).
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
-- **Data:** the Google Sheet. Tabs `Menu` (Type/Name/Price), `Settings` (Key/Value: shopName,
-  tagline, zelleTo, open), `Orders`. Order numbers come from Script Property `NEXT_ID`.
+- **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price),
+  `Settings` (Key/Value: zelleTo, open), `Orders` (… Item, Extras, …, Zelled checkbox).
+  The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
   list/update. The browser keeps it in `sessionStorage` only.
 - **Open / sold out:** Settings `open` (`yes`/`no`; missing = open). Admin's Close shop button
@@ -73,7 +83,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
 | GET | `?action=menu` | none | Menu + public settings, incl. `shop.open` |
-| POST | `{action:'order', name, room, note, meat, addons, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
+| POST | `{action:'order', name, room, note, main, extras, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
 | POST | `{action:'update', password, id, zelled}` | password | Tick or untick Zelled on one order |
@@ -93,27 +103,31 @@ Errors come back as `{ error: "message" }` with HTTP 200.
 
 **Run:** preview server `site` in `.claude/launch.json` (`python -m http.server 5510`). The desktop
 app's preview tool may read launch.json from the session's original folder; copy it there if needed.
-**Build:** none.
-**Test:** `node --test tests/code.test.js` (runs `Code.gs` in `node:vm` with fake Google services).
-Node 24 wants the file path, not the `tests/` folder.
+Shops are at `http://localhost:5510/docs/<slug>/`.
+**Build:** `node build.js` after ANY change to `template/` or `shops/`, then commit `docs/`.
+**New shop:** `node build.js new <slug>` → fill in `shops/<slug>/shop.json` → `node build.js`.
+**Test:** `node --test tests/build.test.js tests/code.test.js` (Node 24 wants file paths, not
+the folder). `code.test.js` runs `Code.gs` in `node:vm` with fake Google services;
+`build.test.js` checks the build and **fails if `docs/` is stale**.
 **Lint:** none.
-**Demo:** leave `API_URL` empty → sample menu, nothing saved, admin password `demo`.
+**Demo:** a shop with `"apiUrl": ""` uses its `demoMenu`, saves nothing, admin code `1234`.
 
 ## Design Direction
 
-White, bold, bouncy ("modern but fun", Ethan's words). Ink `#1A1410`, tomato `#D2341B` (main
-buttons), mustard `#FFC233` (selected / highlights), cream `#FFF5DE`, pickle `#2E8B4E`
+White, bold, bouncy ("modern but fun", Ethan's words). Ink `#1A1410`, `--accent` (main buttons;
+David: tomato `#D2341B`), `--highlight` (selected items; David: mustard `#FFC233`). Each shop sets
+those two in shop.json; everything else is shared: cream `#FFF5DE`, pickle `#2E8B4E`
 (done/delivered). Thick 2.5px ink borders + hard "sticker" shadow (`4px 4px 0`) that presses in on
 tap. Shrikhand only for the shop name and big moments; Bricolage Grotesque for everything else;
-IBM Plex Mono for prices and the order ticket. Hero: drawn SVG panini with steam + stickers. A
-real photo should replace it (see SETUP.md). Light mode only. Phone: total + Continue pinned to the bottom.
+IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: drawn
+`panini.svg` with steam) + stickers; a real photo should replace it. No picture → text only. Light mode only. Phone: total + Continue pinned to the bottom.
 
 ## Roadmap
 
 - [x] **Milestone 1: David's Meat Paninis**: ordering, Zelle step, admin, open/close, demo mode
 - [ ] **Milestone 2: Go live**: deploy script + GitHub Pages, real test order, real photo
-- [ ] **Milestone 3: Second customer**: decide how to host many shops (folder per shop vs. one
-  repo per shop), and make name/colors easy to change per shop
+- [x] **Milestone 3a: Template**: one repo, folder per shop, `node build.js`
+- [ ] **Milestone 3b: Second customer** using `node build.js new`
 
 ## Important Decisions
 
@@ -125,6 +139,9 @@ real photo should replace it (see SETUP.md). Light mode only. Phone: total + Con
 | 2026-10-11 | Demo mode when `API_URL` is empty | Preview without Google; show prospects a working demo | Separate mock server |
 | 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
+| 2026-10-12 | Template: one repo, `shops/<slug>/shop.json` + shared `template/`, `node build.js` → `docs/` | Ethan: every shop works the same, only details differ; fix once → all shops update | A separate repo copy per shop (fixes copied by hand); runtime `?shop=` URLs (ugly links) |
+| 2026-10-12 | Shop name/tagline moved from the Sheet to shop.json; menu types renamed `meat`/`add-on` → `main`/`extra` | One source of truth; works for any food | Keeping panini words in the core |
+| 2026-10-12 | Admin = one table (Name, Room, Order, Zelled ✓), code 1234 | Ethan asked for exactly that | Waiting/To deliver/Delivered tabs |
 | 2026-10-11 | Redesign from toasty-gold hero to white/bold/sticker style | Ethan: more white space, bold, more jump, modern but fun | Gold grill-mark hero (v1) |
 
 ## Implementation Notes

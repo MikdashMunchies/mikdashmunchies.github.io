@@ -10,29 +10,26 @@ async function init() {
   try {
     menu = await api('menu');
   } catch (err) {
-    $('meats').replaceChildren();
+    $('mains').replaceChildren();
     $('form-error').textContent = "Couldn't load the menu. Refresh the page to try again.";
     $('to-pay').disabled = true;
     return;
   }
-  document.querySelectorAll('[data-shop]').forEach(el => {
-    const value = menu.shop[el.dataset.shop];
-    if (value) el.textContent = value;
-  });
-  if (menu.shop.shopName) document.title = menu.shop.shopName;
   if (!menu.shop.open) {
     document.body.classList.add('is-closed');
     $('order').hidden = true;
     $('closed').hidden = false;
     return;
   }
-  if (menu.meats.length) {
-    $('from-price').textContent = 'from ' + money(Math.min(...menu.meats.map(m => m.price)));
+  if (menu.mains.length) {
+    $('from-price').textContent = 'from ' + money(Math.min(...menu.mains.map(m => m.price)));
     $('from-price').hidden = false;
   }
-  $('meats').replaceChildren(...menu.meats.map((m, i) => option('radio', 'meat', m, money(m.price), i === 0)));
-  $('meats').removeAttribute('aria-busy');
-  $('addons').replaceChildren(...menu.addons.map(a => option('checkbox', 'addon', a, '+' + money(a.price))));
+  $('mains').replaceChildren(...menu.mains.map((m, i) => option('radio', 'main', m, money(m.price), i === 0)));
+  $('mains').removeAttribute('aria-busy');
+  $('extras').replaceChildren(...menu.extras.map(x => option('checkbox', 'extra', x, '+' + money(x.price))));
+  // A shop with no extras skips that step entirely.
+  $('extras').closest('fieldset').hidden = !menu.extras.length;
   update();
 }
 
@@ -48,8 +45,8 @@ function option(type, group, item, priceText, checked = false) {
 
 function selection() {
   return {
-    meat: document.querySelector('input[name=meat]:checked')?.value,
-    addons: [...document.querySelectorAll('input[name=addon]:checked')].map(i => i.value),
+    main: document.querySelector('input[name=main]:checked')?.value,
+    extras: [...document.querySelectorAll('input[name=extra]:checked')].map(i => i.value),
     qty,
     name: $('name').value.trim(),
     room: $('room').value.trim(),
@@ -66,11 +63,11 @@ function line(text, amount) {
 
 function update() {
   const sel = selection();
-  const meat = menu.meats.find(m => m.name === sel.meat);
+  const main = menu.mains.find(m => m.name === sel.main);
   const lines = [];
-  if (meat) {
-    lines.push(line(meat.name + ' panini', money(meat.price)));
-    menu.addons.filter(a => sel.addons.includes(a.name)).forEach(a => lines.push(line('+ ' + a.name, money(a.price))));
+  if (main) {
+    lines.push(line(main.name + ' ' + SHOP.item, money(main.price)));
+    menu.extras.filter(x => sel.extras.includes(x.name)).forEach(x => lines.push(line('+ ' + x.name, money(x.price))));
     if (qty > 1) lines.push(line('× ' + qty, ''));
   }
   $('ticket-lines').replaceChildren(...lines);
@@ -92,8 +89,8 @@ $('order-form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!menu) return;
   const sel = selection();
-  const missing = !sel.meat ? null : !sel.name ? 'name' : !sel.room ? 'room' : null;
-  if (!sel.meat) return fail('Pick a meat to start your panini.');
+  if (!sel.main) return fail('Pick one to start your ' + SHOP.item + '.');
+  const missing = !sel.name ? 'name' : !sel.room ? 'room' : null;
   if (missing) {
     $(missing).setAttribute('aria-invalid', 'true');
     $(missing).focus();
@@ -154,7 +151,7 @@ $('place').addEventListener('click', async () => {
 $('again').addEventListener('click', () => {
   $('order-form').reset();
   qty = 1;
-  document.querySelector('input[name=meat]').checked = true;
+  document.querySelector('input[name=main]').checked = true;
   update();
   show('order');
 });
