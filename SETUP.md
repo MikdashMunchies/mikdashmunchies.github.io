@@ -26,8 +26,12 @@ Use the Google account that should **get the order emails**. That is usually the
 In the Sheet:
 
 - **Settings** tab: set `zelleTo` to the seller's Zelle phone number or email. You can also
-  change `shopName` and `tagline`. `orderEmail` is optional: leave it blank to send order
-  emails to the Google account that owns the Sheet.
+  change `shopName` and `tagline`.
+- **Order emails:** put the seller's email in `orderEmail`. Every new order is emailed there.
+  Blank = it goes to the Google account that owns the Sheet. The email is sent **from** the
+  Google account that deployed the script, so if you set it up with your account, David's
+  emails come from you. The first one may land in Spam: mark it "Not spam" once. Google allows
+  about 100 emails a day on a free account, which is plenty.
 - **Menu** tab: one row per item. `Type` is `meat` or `add-on`. Prices are plain numbers
   (`6.5`, not `$6.50`). The site picks up changes the next time someone opens it.
 - **Orders** tab: don't edit the headers. New orders show up here.
@@ -49,7 +53,8 @@ The URL stays the same. (A "New deployment" would give you a new URL.)
 2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `(root)` → Save**.
 3. After about a minute, the site is live at `https://<your-username>.github.io/<repo-name>/`.
    - The shop is that link.
-   - The admin page is that link + `admin.html`.
+   - The admin page is on the same site, not linked anywhere. Get there by **tapping the shop
+     name 5 times quickly**, or by adding `admin.html` to the end of the link. It still needs the password.
 
 The site has no secrets in it, so a public repo is fine. The password stays inside the Google script.
 
