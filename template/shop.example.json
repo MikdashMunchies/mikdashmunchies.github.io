@@ -1,0 +1,24 @@
+{
+  "name": "Your Shop Name",
+  "tagline": "One short line about the food.",
+  "item": "order",
+  "mainLabel": "Pick one",
+  "extrasLabel": "Extras",
+  "notePlaceholder": "Anything we should know?",
+  "sticker": "Made fresh",
+  "image": "",
+  "imageAlt": "",
+  "accent": "#D2341B",
+  "highlight": "#FFC233",
+  "apiUrl": "",
+  "demoMenu": {
+    "zelleTo": "(555) 123-4567",
+    "mains": [
+      { "name": "Example item", "price": 5 },
+      { "name": "Another item", "price": 6 }
+    ],
+    "extras": [
+      { "name": "Example extra", "price": 1 }
+    ]
+  }
+}

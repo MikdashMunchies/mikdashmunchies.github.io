@@ -22,19 +22,17 @@ function load({ open } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
-      ['meat', 'Turkey', 6],
-      ['meat', 'Pastrami', 7.5],
-      ['add-on', 'Pickles', 0.5],
-      ['add-on', 'Extra meat', 2],
+      ['main', 'Turkey', 6],
+      ['main', 'Pastrami', 7.5],
+      ['extra', 'Pickles', 0.5],
+      ['extra', 'Extra meat', 2],
     ]),
     Settings: fakeSheet([
       ['Key', 'Value'],
-      ['shopName', "David's Meat Paninis"],
-      ['tagline', 'Hot off the press'],
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
     ]),
-    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Zelled']]),
+    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled']]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass' };
   const ctx = {
@@ -50,15 +48,14 @@ function load({ open } = {}) {
   return { post, get, sheets };
 }
 
-const good = { action: 'order', name: 'Avi', room: '204', meat: 'Pastrami', addons: ['Pickles', 'Extra meat'], qty: 2 };
+const good = { action: 'order', name: 'Avi', room: '204', main: 'Pastrami', extras: ['Pickles', 'Extra meat'], qty: 2 };
 
 test('menu comes from the sheet', () => {
   const { get } = load();
   const m = get('menu');
-  assert.strictEqual(m.shop.shopName, "David's Meat Paninis");
   assert.strictEqual(m.shop.zelleTo, '555-123-4567');
-  assert.deepStrictEqual(m.meats.map(x => x.name), ['Turkey', 'Pastrami']);
-  assert.deepStrictEqual(m.addons.map(x => x.price), [0.5, 2]);
+  assert.deepStrictEqual(m.mains.map(x => x.name), ['Turkey', 'Pastrami']);
+  assert.deepStrictEqual(m.extras.map(x => x.price), [0.5, 2]);
 });
 
 test('order is priced by the server, ignoring a tampered total', () => {
@@ -78,8 +75,8 @@ test('order ids go up', () => {
 test('bad orders are rejected and not saved', () => {
   const { post, sheets } = load();
   const bad = [
-    { ...good, meat: 'Lobster' },
-    { ...good, addons: ['Gold flakes'] },
+    { ...good, main: 'Lobster' },
+    { ...good, extras: ['Gold flakes'] },
     { ...good, qty: 0 },
     { ...good, qty: 11 },
     { ...good, qty: 1.5 },
@@ -137,6 +134,8 @@ test('admin list and update need the right password', () => {
   const list = post({ action: 'list', password: 'secret-pass' }).orders;
   assert.deepStrictEqual(list.map(o => o.name), ['Ben', 'Avi']); // newest first
   assert.deepStrictEqual(list.map(o => o.zelled), [false, false]);
+  assert.strictEqual(list[1].item, 'Pastrami');
+  assert.strictEqual(list[1].extras, 'Pickles, Extra meat');
 
   assert.ok(post({ action: 'update', password: 'nope', id: 1, zelled: true }).error);
   assert.ok(post({ action: 'update', password: 'secret-pass', id: 99, zelled: true }).error);

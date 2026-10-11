@@ -1,7 +1,9 @@
 const $ = id => document.getElementById(id);
 
 // Session-only: closing the tab logs out.
-let password = sessionStorage.getItem('adminPassword') || '';
+// Keyed per shop because every shop shares one website (and so one sessionStorage).
+const PASSWORD_KEY = 'adminPassword:' + SHOP.slug;
+let password = sessionStorage.getItem(PASSWORD_KEY) || '';
 let shopOpen = true;
 
 $('demo-banner').hidden = !DEMO;
@@ -18,7 +20,7 @@ $('login').addEventListener('submit', async e => {
 $('refresh').addEventListener('click', load);
 
 $('logout').addEventListener('click', () => {
-  sessionStorage.removeItem('adminPassword');
+  sessionStorage.removeItem(PASSWORD_KEY);
   password = '';
   $('password').value = '';
   showBoard(false);
@@ -28,13 +30,13 @@ async function load() {
   $('board-error').textContent = '';
   try {
     const { orders, open } = await api('list', { password });
-    sessionStorage.setItem('adminPassword', password);
+    sessionStorage.setItem(PASSWORD_KEY, password);
     showBoard(true);
     renderOpen(open);
     render(orders);
   } catch (err) {
     if (/password/i.test(err.message)) {
-      sessionStorage.removeItem('adminPassword');
+      sessionStorage.removeItem(PASSWORD_KEY);
       showBoard(false);
       $('login-error').textContent = 'Wrong code. Try again.';
       $('password').value = '';
@@ -99,7 +101,7 @@ function row(o) {
   tr.classList.toggle('is-zelled', o.zelled);
 
   const order = el('td', 'col-order');
-  order.append(el('span', '', `${o.qty} × ${o.meat}${o.addons ? ' + ' + o.addons : ''}`));
+  order.append(el('span', '', `${o.qty} × ${o.item}${o.extras ? ' + ' + o.extras : ''}`));
   order.append(el('span', 'order-total', money(o.total)));
   if (o.note) order.append(el('span', 'order-note', `“${o.note}”`));
 

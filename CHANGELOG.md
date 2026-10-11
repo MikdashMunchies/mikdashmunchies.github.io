@@ -18,6 +18,12 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Admin "Close shop / Open shop" switch; site shows "Sold out!" and the server refuses orders while closed.
 - Admin is now a simple table (Name · Room · Order · Zelled checkbox) behind code 1234; the Sheet gets real checkboxes.
 
+- **Template:** `template/` (shared core) + `shops/<slug>/shop.json` (details) + `node build.js` → `docs/`. `node build.js new <slug>` starts a shop. Build tests, including a stale-`docs/` check.
+
+### Changed
+- Menu types are now `main` / `extra` (were `meat` / `add-on`); shop name and tagline moved from the Sheet to `shop.json`.
+- Step numbers count themselves, so a shop with no extras reads 1, 2, 3.
+
 ### Removed
 - Order emails (not needed; admin page shows orders).
 - Seller pricing: $10 setup + $15/month.

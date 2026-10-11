@@ -1,17 +1,17 @@
-// Paste the Apps Script web app URL here (see SETUP.md).
-// Left empty, the site runs in demo mode: sample menu, nothing is saved.
-const API_URL = '';
+// SHOP comes from the shop's config.js, which build.js writes from shops/<slug>/shop.json.
+// With no apiUrl the site runs in demo mode: the shop's demoMenu, nothing is saved.
+const API_URL = SHOP.apiUrl;
 const DEMO = !API_URL;
 
 const money = n => '$' + Number(n).toFixed(2);
 
 // Display-only price. The real charge is worked out by the Google script.
 function priceOf(menu, sel) {
-  const meat = menu.meats.find(m => m.name === sel.meat);
-  if (!meat) return 0;
+  const main = menu.mains.find(m => m.name === sel.main);
+  if (!main) return 0;
   const cents = p => Math.round(p * 100);
-  const extras = menu.addons.filter(a => sel.addons.includes(a.name)).reduce((s, a) => s + cents(a.price), 0);
-  return ((cents(meat.price) + extras) * sel.qty) / 100;
+  const extras = menu.extras.filter(x => sel.extras.includes(x.name)).reduce((s, x) => s + cents(x.price), 0);
+  return ((cents(main.price) + extras) * sel.qty) / 100;
 }
 
 async function api(action, data = {}) {
@@ -33,36 +33,24 @@ async function api(action, data = {}) {
 // --- Demo mode -------------------------------------------------------------
 
 const DEMO_MENU = {
-  shop: {
-    shopName: "David's Meat Paninis",
-    tagline: 'Pressed hot, delivered to your classroom.',
-    zelleTo: '(555) 123-4567',
-  },
-  meats: [
-    { name: 'Turkey', price: 6 },
-    { name: 'Pastrami', price: 7 },
-    { name: 'Salami', price: 6.5 },
-    { name: 'Roast beef', price: 7 },
-  ],
-  addons: [
-    { name: 'Extra meat', price: 2 },
-    { name: 'Pickles', price: 0.5 },
-    { name: 'Grilled onions', price: 0.5 },
-    { name: 'Spicy mayo', price: 0.5 },
-    { name: 'Avocado', price: 1 },
-  ],
+  shop: { zelleTo: SHOP.demoMenu.zelleTo },
+  mains: SHOP.demoMenu.mains,
+  extras: SHOP.demoMenu.extras,
 };
 
+const [m1, m2 = m1] = DEMO_MENU.mains;
 const demoOrders = [
-  { id: 2, time: new Date(Date.now() - 8 * 60000).toISOString(), name: 'Avi Cohen', room: '204', meat: 'Pastrami', addons: 'Pickles, Spicy mayo', qty: 2, total: 16, note: 'Extra crispy', zelled: false },
-  { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', meat: 'Turkey', addons: '', qty: 1, total: 6, note: '', zelled: true },
+  { id: 2, time: new Date(Date.now() - 8 * 60000).toISOString(), name: 'Avi Cohen', room: '204', item: m2.name, extras: '', qty: 2, total: m2.price * 2, note: '', zelled: false },
+  { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', item: m1.name, extras: '', qty: 1, total: m1.price, note: '', zelled: true },
 ];
 
 // Kept in localStorage so closing the shop on the demo admin page shows on the demo shop page.
+// Keyed per shop because every shop shares one website (and so one localStorage).
 function demoOpen(value) {
+  const key = 'demoOpen:' + SHOP.slug;
   try {
-    if (value !== undefined) localStorage.setItem('demoOpen', value ? 'yes' : 'no');
-    return localStorage.getItem('demoOpen') !== 'no';
+    if (value !== undefined) localStorage.setItem(key, value ? 'yes' : 'no');
+    return localStorage.getItem(key) !== 'no';
   } catch (err) {
     return true;
   }
@@ -76,7 +64,7 @@ function demoApi(action, data) {
     if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
     const total = priceOf(DEMO_MENU, data);
     const id = demoOrders.length + 1;
-    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, meat: data.meat, addons: data.addons.join(', '), qty: data.qty, total, note: data.note, zelled: false });
+    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, item: data.main, extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
     return wait({ id, total });
   }
   if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
