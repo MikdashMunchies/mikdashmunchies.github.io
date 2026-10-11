@@ -15,11 +15,9 @@ or the seller's (David's) if they want it in their own Drive.
      **Advanced → Go to (project name) (unsafe) → Allow**. ("Unsafe" just means Google
      hasn't reviewed your own script. That's normal.)
    - Go back to the Sheet. You'll see three new tabs: **Menu**, **Settings**, **Orders**.
-5. In the Apps Script page, click the gear (**Project Settings**). Scroll to
-   **Script Properties → Add script property**:
-   - Property: `ADMIN_PASSWORD`
-   - Value: a long password (12+ characters). This is the admin page login.
-   - Click **Save script properties**.
+5. The admin code is now **1234** (`setup` set it). To change it: in Apps Script click the gear
+   (**Project Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.
+   There's no lockout after wrong guesses, so a longer code is safer.
 
 ## 2. Fill in the shop
 
@@ -58,8 +56,8 @@ The site has no secrets in it, so a public repo is fine. The password stays insi
 
 1. Open the shop on your phone and place an order.
 2. Check that a row showed up in the **Orders** tab.
-3. Open the admin page, log in, and tap **Got their Zelle** on the order. Check that the Sheet
-   now says `Paid`.
+3. Open the admin page, enter the code, and tick **Zelled** on the order. Check that the box in
+   the Sheet's **Zelled** column is ticked too.
 4. Tap **Close shop**, then open the shop page: it should say **Sold out!** Tap **Open shop** again.
 
 ## Photo

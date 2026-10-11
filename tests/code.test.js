@@ -13,7 +13,8 @@ function fakeSheet(rows) {
     rows,
     getDataRange: () => ({ getValues: () => rows.map(r => [...r]) }),
     appendRow: r => rows.push([...r]),
-    getRange: (row, col) => ({ setValue: v => { rows[row - 1][col - 1] = v; } }),
+    getLastRow: () => rows.length,
+    getRange: (row, col) => ({ setValue: v => { rows[row - 1][col - 1] = v; }, insertCheckboxes() {} }),
   };
 }
 
@@ -33,7 +34,7 @@ function load({ open } = {}) {
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
     ]),
-    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Status']]),
+    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Meat', 'Add-ons', 'Qty', 'Total', 'Note', 'Zelled']]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass' };
   const ctx = {
@@ -65,7 +66,7 @@ test('order is priced by the server, ignoring a tampered total', () => {
   const r = post({ ...good, total: 0.01 });
   assert.deepStrictEqual(r, { id: 1, total: 20 }); // (7.5 + 0.5 + 2) * 2
   const row = sheets.Orders.rows[1];
-  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 20, '', 'Pending payment']);
+  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 20, '', false]);
 });
 
 test('order ids go up', () => {
@@ -135,9 +136,21 @@ test('admin list and update need the right password', () => {
 
   const list = post({ action: 'list', password: 'secret-pass' }).orders;
   assert.deepStrictEqual(list.map(o => o.name), ['Ben', 'Avi']); // newest first
+  assert.deepStrictEqual(list.map(o => o.zelled), [false, false]);
 
-  assert.ok(post({ action: 'update', password: 'nope', id: 1, status: 'Paid' }).error);
-  assert.ok(post({ action: 'update', password: 'secret-pass', id: 1, status: 'Free' }).error);
-  assert.deepStrictEqual(post({ action: 'update', password: 'secret-pass', id: 1, status: 'Paid' }), { ok: true });
-  assert.strictEqual(sheets.Orders.rows[1][9], 'Paid');
+  assert.ok(post({ action: 'update', password: 'nope', id: 1, zelled: true }).error);
+  assert.ok(post({ action: 'update', password: 'secret-pass', id: 99, zelled: true }).error);
+  assert.deepStrictEqual(post({ action: 'update', password: 'secret-pass', id: 1, zelled: true }), { ok: true });
+  assert.strictEqual(sheets.Orders.rows[1][9], true);
+  assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).orders[1].zelled, true);
+
+  post({ action: 'update', password: 'secret-pass', id: 1, zelled: false }); // untick
+  assert.strictEqual(sheets.Orders.rows[1][9], false);
+});
+
+test('a box ticked by hand in the Sheet reads as zelled', () => {
+  const { post, sheets } = load();
+  post(good);
+  sheets.Orders.rows[1][9] = 'TRUE'; // how a typed TRUE can come back
+  assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).orders[0].zelled, true);
 });

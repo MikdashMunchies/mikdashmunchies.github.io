@@ -54,8 +54,8 @@ const DEMO_MENU = {
 };
 
 const demoOrders = [
-  { id: 2, time: new Date(Date.now() - 8 * 60000).toISOString(), name: 'Avi Cohen', room: '204', meat: 'Pastrami', addons: 'Pickles, Spicy mayo', qty: 2, total: 16, note: 'Extra crispy', status: 'Pending payment' },
-  { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', meat: 'Turkey', addons: '', qty: 1, total: 6, note: '', status: 'Paid' },
+  { id: 2, time: new Date(Date.now() - 8 * 60000).toISOString(), name: 'Avi Cohen', room: '204', meat: 'Pastrami', addons: 'Pickles, Spicy mayo', qty: 2, total: 16, note: 'Extra crispy', zelled: false },
+  { id: 1, time: new Date(Date.now() - 40 * 60000).toISOString(), name: 'Ben Levi', room: '118', meat: 'Turkey', addons: '', qty: 1, total: 6, note: '', zelled: true },
 ];
 
 // Kept in localStorage so closing the shop on the demo admin page shows on the demo shop page.
@@ -76,14 +76,14 @@ function demoApi(action, data) {
     if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
     const total = priceOf(DEMO_MENU, data);
     const id = demoOrders.length + 1;
-    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, meat: data.meat, addons: data.addons.join(', '), qty: data.qty, total, note: data.note, status: 'Pending payment' });
+    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, meat: data.meat, addons: data.addons.join(', '), qty: data.qty, total, note: data.note, zelled: false });
     return wait({ id, total });
   }
-  if (data.password !== 'demo') return fail('Wrong password. (Demo password: demo)');
+  if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
   if (action === 'list') return wait({ orders: demoOrders.map(o => ({ ...o })), open: demoOpen() });
   if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
   if (action === 'update') {
-    demoOrders.find(o => o.id === data.id).status = data.status;
+    demoOrders.find(o => o.id === data.id).zelled = data.zelled === true;
     return wait({ ok: true });
   }
 }
