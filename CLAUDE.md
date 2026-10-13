@@ -71,6 +71,9 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Build:** `node build.js` → `docs/` (GitHub Pages serves `/docs`): `docs/assets/` (shared
   CSS/JS, once) + `docs/<slug>/` (filled `index.html`/`admin.html`, `config.js` = `const SHOP =
   {...shop.json, slug}`, picture). Values are HTML-escaped; a missing `{{key}}` fails the build.
+  Also generated: `docs/index.html` (MikdashMunchies home page, one card per shop, from
+  `template/home.html`) and the repo's `README.md` (all links). Shared CSS/JS links carry a content
+  fingerprint (`style.css?v=<sha1>`) so visitors never get stale files after a deploy.
   `docs/` is generated: never edit it by hand. All shops share one origin, so browser storage
   keys are per shop (`adminPassword:<slug>`, `demoOpen:<slug>`).
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps

@@ -74,6 +74,8 @@ Commit and push. The first time only, on GitHub: **Settings → Pages → Deploy
 `main` / `/docs` → Save**. After about a minute every shop is live:
 
 - Shop: `https://mikdashmunchies.github.io/sarahs-cookies/`
+- It also appears automatically on the home page (https://mikdashmunchies.github.io/) and in the
+  repo's README link list — both are rebuilt by `node build.js`.
 - Admin: tap the shop name **5 times quickly**, or add `admin.html` to the end of that link.
 
 ### 5. Make its QR code

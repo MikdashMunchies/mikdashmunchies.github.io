@@ -51,6 +51,43 @@ test("David's shop builds into working pages", () => {
   assert.strictEqual(ctx.SHOP.item, 'panini');
 });
 
+// Browsers keep old CSS/JS for a while; a fingerprint that changes with the file forces a fresh copy.
+test('pages load shared files with a fingerprint that matches their content', () => {
+  const crypto = require('node:crypto');
+  const out = tempBuild();
+  const pages = [read(out, 'index.html'), read(out, 'davids-paninis', 'index.html'), read(out, 'davids-paninis', 'admin.html')];
+  let checked = 0;
+  for (const html of pages) {
+    for (const [, file, v] of html.matchAll(/assets\/([\w.]+)\?v=(\w+)/g)) {
+      const hash = crypto.createHash('sha1').update(fs.readFileSync(path.join(out, 'assets', file))).digest('hex').slice(0, 10);
+      assert.strictEqual(v, hash, `${file} fingerprint`);
+      checked++;
+    }
+    assert.ok(!/assets\/[\w.]+"/.test(html), 'no shared file loaded without a fingerprint');
+  }
+  assert.ok(checked >= 5, `checked ${checked} links`);
+});
+
+test('the home page links every shop, with names escaped', () => {
+  const out = tempBuild();
+  const home = read(out, 'index.html');
+  const slugs = fs.readdirSync(path.join(ROOT, 'shops'));
+  assert.ok(slugs.length >= 1);
+  for (const slug of slugs) {
+    assert.match(home, new RegExp(`href="${slug}/"`), `home page links ${slug}`);
+  }
+  assert.match(home, /David&#39;s Meat Paninis/);
+  assert.ok(!home.includes('<!-- SHOPS -->'), 'placeholder was filled');
+});
+
+test('README.md lists every shop (run `node build.js` if this fails)', () => {
+  const { readme } = require('../build.js');
+  assert.strictEqual(read(ROOT, 'README.md').replace(/\r\n/g, '\n'), readme());
+  for (const slug of fs.readdirSync(path.join(ROOT, 'shops'))) {
+    assert.ok(readme().includes(`https://mikdashmunchies.github.io/${slug}/`), slug);
+  }
+});
+
 // Windows git can leave source files with CRLF on disk; the built site must be LF either way,
 // or docs/ "changes" depending on which machine built it.
 test('built files always use plain LF line endings', () => {

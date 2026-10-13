@@ -458,6 +458,46 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .panel-done p { font-size: 1.15rem; margin: 0 0 32px; color: var(--ink-soft); }
 .panel-done p strong { color: var(--ink); }
 
+/* ---------- Home page: every shop as a card ---------- */
+
+.home-hero { grid-template-columns: 1fr; }
+.home .shop-name { max-width: none; font-size: clamp(1.8rem, 9vw, 5.4rem); white-space: nowrap; } /* one line, scales with the screen */
+.home-main { max-width: 1120px; margin: 0 auto; padding: 8px var(--gutter) 64px; }
+.home-title { font-size: 1.7rem; margin-bottom: 20px; }
+.shop-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 16px;
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--pop);
+  background: var(--white);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform .18s var(--bounce), box-shadow .18s var(--bounce);
+}
+.shop-card:hover { transform: translate(-2px, -2px); box-shadow: var(--pop-big); }
+.shop-card:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+.shop-card-art { display: grid; place-items: center; aspect-ratio: 16 / 10; margin-bottom: 6px; border-radius: 12px; background: var(--card-highlight); }
+.shop-card-art img { width: 82%; height: 82%; object-fit: contain; }
+.shop-card-name { font: 400 1.5rem/1.1 var(--display); }
+.shop-card-tagline { color: var(--ink-soft); font-size: 0.95rem; flex: 1; }
+.shop-card-go {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 10px 18px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--card-accent);
+  color: var(--white);
+  font-weight: 800;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.home-pitch { margin: 40px 0 0; text-align: center; color: var(--ink-soft); font-weight: 600; }
+
 /* ---------- Sold out ---------- */
 
 .sticker-soldout { display: none; }
