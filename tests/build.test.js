@@ -51,6 +51,16 @@ test("David's shop builds into working pages", () => {
   assert.strictEqual(ctx.SHOP.item, 'panini');
 });
 
+// Windows git can leave source files with CRLF on disk; the built site must be LF either way,
+// or docs/ "changes" depending on which machine built it.
+test('built files always use plain LF line endings', () => {
+  const out = tempBuild();
+  const files = fs.readdirSync(out, { recursive: true }).map(f => path.join(out, f))
+    .filter(f => fs.statSync(f).isFile() && /\.(html|js|css|svg)$/.test(f));
+  const withCR = files.filter(f => fs.readFileSync(f).includes(13)); // 13 = '\r'
+  assert.deepStrictEqual(withCR.map(f => path.relative(out, f)), []);
+});
+
 // The live site is docs/. If someone edits template/ or shops/ and forgets `node build.js`,
 // the site would silently stay old. This catches that.
 test('docs/ matches a fresh build (run `node build.js` if this fails)', () => {

@@ -13,6 +13,12 @@ const SHOPS = path.join(ROOT, 'shops');
 const SHARED = ['style.css', 'api.js', 'shop.js', 'admin.js'];
 const PAGES = ['index.html', 'admin.html'];
 
+// Text output is always written with LF line endings: Windows git can leave CRLF on disk, and
+// the built site must not change depending on which machine (or checkout) built it.
+const TEXT = /\.(html|js|css|svg|json|txt)$/i;
+const lf = text => text.replace(/\r\n/g, '\n');
+const copy = (from, to) => (TEXT.test(from) ? fs.writeFileSync(to, lf(fs.readFileSync(from, 'utf8'))) : fs.copyFileSync(from, to));
+
 const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // Swaps each {{key}} for the shop's value. A missing key is an error, not a blank on the live site.
@@ -26,7 +32,7 @@ function fill(html, shop) {
 function build(out = path.join(ROOT, 'docs')) {
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
-  for (const file of SHARED) fs.copyFileSync(path.join(TEMPLATE, file), path.join(out, 'assets', file));
+  for (const file of SHARED) copy(path.join(TEMPLATE, file), path.join(out, 'assets', file));
   fs.writeFileSync(path.join(out, '.nojekyll'), ''); // tell GitHub Pages to serve files as-is
 
   const slugs = fs.readdirSync(SHOPS).filter(f => fs.statSync(path.join(SHOPS, f)).isDirectory());
@@ -36,11 +42,11 @@ function build(out = path.join(ROOT, 'docs')) {
     const dest = path.join(out, slug);
     fs.mkdirSync(dest);
     for (const page of PAGES) {
-      fs.writeFileSync(path.join(dest, page), fill(fs.readFileSync(path.join(TEMPLATE, page), 'utf8'), shop));
+      fs.writeFileSync(path.join(dest, page), fill(lf(fs.readFileSync(path.join(TEMPLATE, page), 'utf8')), shop));
     }
     fs.writeFileSync(path.join(dest, 'config.js'), `const SHOP = ${JSON.stringify(shop, null, 2)};\n`);
     for (const file of fs.readdirSync(dir)) {
-      if (file !== 'shop.json') fs.copyFileSync(path.join(dir, file), path.join(dest, file));
+      if (file !== 'shop.json') copy(path.join(dir, file), path.join(dest, file));
     }
   }
   return slugs;
