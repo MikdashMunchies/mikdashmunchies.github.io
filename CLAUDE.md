@@ -22,7 +22,9 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** David's Google back end is LIVE (Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Site works against it locally.
+- **Current Phase:** David's Meat Paninis is PUBLIC and working end to end (site on GitHub Pages → Google
+  Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Not yet
+  announced to buyers.
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Live:** https://mikdashmunchies.github.io/davids-paninis/ (admin: + `admin.html`). QR: `qr/davids-paninis.png`.
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
@@ -132,7 +134,8 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 ## Roadmap
 
 - [x] **Milestone 1: David's Meat Paninis**: ordering, Zelle step, admin, open/close, demo mode
-- [ ] **Milestone 2: Go live**: deploy script + GitHub Pages, real test order, real photo
+- [x] **Milestone 2: Go live**: script deployed, GitHub Pages under MikdashMunchies, real test orders, QR code
+- [ ] **Milestone 2b: Launch David**: real Zelle + prices in the Sheet, real panini photo, share link/QR
 - [x] **Milestone 3a: Template**: one repo, folder per shop, `node build.js`
 - [ ] **Milestone 3b: Second customer** using `node build.js new`
 
@@ -146,6 +149,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-11 | Demo mode when `API_URL` is empty | Preview without Google; show prospects a working demo | Separate mock server |
 | 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
+| 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
 | 2026-10-12 | Template: one repo, `shops/<slug>/shop.json` + shared `template/`, `node build.js` → `docs/` | Ethan: every shop works the same, only details differ; fix once → all shops update | A separate repo copy per shop (fixes copied by hand); runtime `?shop=` URLs (ugly links) |
 | 2026-10-12 | Shop name/tagline moved from the Sheet to shop.json; menu types renamed `meat`/`add-on` → `main`/`extra` | One source of truth; works for any food | Keeping panini words in the core |
 | 2026-10-12 | Admin = one table (Name, Room, Order, Zelled ✓), code 1234 | Ethan asked for exactly that | Waiting/To deliver/Delivered tabs |
@@ -174,5 +178,5 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 
 ## Notes
 
-- Spec and plan: `docs/superpowers/specs/2026-10-11-paninis-site-design.md`, `docs/superpowers/plans/2026-10-11-paninis-site.md`.
+- Spec and plan (first design, partly superseded — see Important Decisions): `planning/specs/2026-10-11-paninis-site-design.md`, `planning/plans/2026-10-11-paninis-site.md`.
 - Ideas parked: different paninis in one order, pickup times, card payments, dark mode.
