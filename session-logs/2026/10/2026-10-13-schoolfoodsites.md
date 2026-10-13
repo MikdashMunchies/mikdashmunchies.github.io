@@ -114,3 +114,7 @@ no alcohol on menus (student buyers).
 - Verified: 22 tests (missing fingerprint caught), home page at 375 px and 1280 px, 25/25 live files
   byte-identical to `docs/`, README on GitHub lists all 5 shops.
 - Still open: the 4 new shops have **no Google Sheets yet** (demo mode) — first task next session.
+- Final wrap-up: CLAUDE.md status now links the home page; decision recorded for generated
+  home/README + fingerprints. Global rulebook → v1.38.0 (fingerprint assets on static sites).
+- **Start next session with:** Google Sheet + script for Henry's, Yitz's, Josh's, Eli's
+  (SETUP.md steps 2–3, Ethan clicks "Allow"), put each URL in `shops/<slug>/shop.json` → build → push.
