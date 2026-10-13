@@ -52,6 +52,7 @@ Use whichever Google account should own the orders: yours if you run it for the 
    - **Menu**: one row per item. `Type` is `main` (pick one, e.g. the meat) or `extra`
      (optional add-ons). Prices are plain numbers (`6.5`). Replace the example rows.
    - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
+     `deliveryFee` is what delivery costs per order (default `1`; pickup is always free).
    - **Orders**: new orders show up here. Don't change the headers.
 5. The admin code is **1234**. To change it: in Apps Script click the gear (**Project
    Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.

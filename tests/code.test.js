@@ -25,7 +25,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ open } = {}) {
+function load({ open, deliveryFee } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -38,6 +38,7 @@ function load({ open } = {}) {
       ['Key', 'Value'],
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
+      ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
     ]),
     Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled']]),
   };
@@ -55,7 +56,7 @@ function load({ open } = {}) {
   return { post, get, sheets };
 }
 
-const good = { action: 'order', name: 'Avi', room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
+const good = { action: 'order', name: 'Avi', delivery: true, room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
 
 test('menu comes from the sheet', () => {
   const { get } = load();
@@ -68,16 +69,31 @@ test('menu comes from the sheet', () => {
 test('order is priced by the server, ignoring a tampered total', () => {
   const { post, sheets } = load();
   const r = post({ ...good, total: 0.01 });
-  assert.deepStrictEqual(r, { id: 1, total: 20 }); // (7.5 + 0.5 + 2) * 2
+  assert.deepStrictEqual(r, { id: 1, total: 21 }); // (7.5 + 0.5 + 2) * 2, + $1 delivery once
   const row = sheets.Orders.rows[1];
-  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 20, '', false]);
+  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 21, '', false]);
 });
 
 test('several mains go in one item and their prices add up', () => {
   const { post, sheets } = load();
   const r = post({ ...good, mains: ['Turkey', 'Pastrami', 'Turkey'], extras: ['Pickles'], qty: 1 });
-  assert.strictEqual(r.total, 14); // 6 + 7.5 + 0.5; the repeated Turkey counts once
+  assert.strictEqual(r.total, 15); // 6 + 7.5 + 0.5 (the repeated Turkey counts once) + $1 delivery
   assert.strictEqual(sheets.Orders.rows[1][4], 'Turkey + Pastrami');
+});
+
+test('pickup has no fee and needs no room', () => {
+  const { post, sheets } = load();
+  const r = post({ ...good, delivery: false, room: '', qty: 1 });
+  assert.strictEqual(r.total, 10); // 7.5 + 0.5 + 2, no delivery fee
+  assert.strictEqual(sheets.Orders.rows[1][3], 'Pickup');
+});
+
+test('delivery fee comes from the sheet (default $1) and is shown on the menu', () => {
+  assert.strictEqual(load().get('menu').shop.deliveryFee, 1);
+  const pricey = load({ deliveryFee: 1.5 });
+  assert.strictEqual(pricey.get('menu').shop.deliveryFee, 1.5);
+  assert.strictEqual(pricey.post({ ...good, qty: 1 }).total, 11.5); // 10 + 1.5
+  assert.strictEqual(load({ deliveryFee: 'abc' }).get('menu').shop.deliveryFee, 1); // junk -> default
 });
 
 test('order ids go up', () => {

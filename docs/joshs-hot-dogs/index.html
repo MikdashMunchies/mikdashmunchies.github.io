@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Josh&#39;s Hot Dog Stand</title>
+  <meta name="description" content="Josh&#39;s Hot Dog Stand: Hot dogs, crispy fries and cold soda. Order on your phone, pay with Zelle.">
+  <meta name="theme-color" content="#FFD23F">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>:root { --accent: #1D5BBF; --highlight: #FFD23F; }</style>
+</head>
+<body class="shop">
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <p class="eyebrow">Delivery or pickup · Pay with Zelle</p>
+        <h1>
+          <span class="welcome">Welcome to</span>
+          <span class="shop-name">Josh&#39;s Hot Dog Stand</span>
+        </h1>
+        <p class="tagline">Hot dogs, crispy fries and cold soda.</p>
+        <a class="btn btn-primary btn-big" href="#order">Build your order</a>
+      </div>
+
+      <figure class="hero-art">
+        <span class="sticker sticker-hot">Fresh off the grill</span>
+        <span class="sticker sticker-price" id="from-price" hidden></span>
+        <span class="sticker sticker-soldout" aria-hidden="true">Sold<br>out</span>
+        <img class="hero-img" src="hotdog.svg" alt="A hot dog with mustard next to a carton of fries">
+      </figure>
+    </div>
+  </header>
+
+  <p class="demo-banner" id="demo-banner" hidden>Demo mode: orders aren't saved.</p>
+
+  <section id="closed" class="panel panel-closed" hidden aria-labelledby="closed-title">
+    <h2 id="closed-title">Sold out!</h2>
+    <p>We're not taking any more orders right now. Check back soon.</p>
+  </section>
+
+  <main id="order" class="layout">
+    <form id="order-form" class="builder" novalidate>
+      <fieldset class="step">
+        <legend><span class="step-num"></span>Pick your food <span class="hint">pick one or more</span></legend>
+        <div id="mains" class="tiles" aria-busy="true">
+          <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+        </div>
+      </fieldset>
+
+      <fieldset class="step">
+        <legend><span class="step-num"></span>Drinks <span class="hint">optional</span></legend>
+        <div id="extras" class="chips"></div>
+      </fieldset>
+
+      <fieldset class="step">
+        <legend><span class="step-num"></span>How many</legend>
+        <div class="stepper">
+          <button type="button" id="qty-minus" aria-label="One less">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+          </button>
+          <output id="qty" aria-live="polite">1</output>
+          <button type="button" id="qty-plus" aria-label="One more">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+      </fieldset>
+
+      <fieldset class="step">
+        <legend><span class="step-num"></span>Delivery or pickup</legend>
+        <div class="tiles">
+          <label class="tile"><input type="radio" name="how" value="delivery" checked><span class="opt-name">Deliver to my room</span><span class="opt-price" id="fee-label">+$1.00</span></label>
+          <label class="tile"><input type="radio" name="how" value="pickup"><span class="opt-name">I'll pick it up</span><span class="opt-price">Free</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="step">
+        <legend><span class="step-num"></span>Your details</legend>
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" autocomplete="name" maxlength="40" required>
+        </div>
+        <div class="field" id="room-field">
+          <label for="room">Room number</label>
+          <input id="room" maxlength="20" required autocomplete="off" placeholder="e.g. 204">
+        </div>
+        <div class="field">
+          <label for="note">Anything special? <span class="hint">optional</span></label>
+          <textarea id="note" maxlength="200" rows="2" placeholder="Extra mustard, no ketchup…"></textarea>
+        </div>
+      </fieldset>
+    </form>
+
+    <aside class="ticket" aria-labelledby="ticket-title">
+      <div class="ticket-paper">
+        <h2 id="ticket-title">Your order</h2>
+        <ul id="ticket-lines" class="ticket-lines"></ul>
+        <div class="checkout">
+          <p id="form-error" class="error" role="alert"></p>
+          <div class="checkout-row">
+            <p class="ticket-total"><span>Total</span><strong id="total">$0.00</strong></p>
+            <button type="submit" form="order-form" class="btn btn-primary" id="to-pay">Continue to payment</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <section id="pay" class="panel" hidden aria-labelledby="pay-title" tabindex="-1">
+    <h2 id="pay-title">Pay with Zelle</h2>
+    <ol class="pay-steps">
+      <li>Open <strong>Zelle</strong> in your bank app.
+        <a class="btn-zelle" href="https://www.zelle.com/get-started" target="_blank" rel="noopener">Open Zelle<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+      </li>
+      <li>
+        Send <strong id="pay-amount" class="mono"></strong> to
+        <span class="copy-row"><code id="zelle-to"></code><button type="button" class="btn-copy" data-copy="zelle-to">Copy</button></span>
+      </li>
+      <li>
+        In the memo, write
+        <span class="copy-row"><code id="memo"></code><button type="button" class="btn-copy" data-copy="memo">Copy</button></span>
+      </li>
+    </ol>
+    <p id="pay-error" class="error" role="alert"></p>
+    <button type="button" class="btn btn-primary btn-wide" id="place">I sent it — place my order</button>
+    <button type="button" class="btn-link" id="back">Back to my order</button>
+  </section>
+
+  <section id="done" class="panel panel-done" hidden aria-labelledby="done-title" tabindex="-1">
+    <p class="order-num mono">Order #<span id="done-id"></span></p>
+    <div class="done-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg></div>
+    <h2 id="done-title">Order completed</h2>
+    <p>You're on the list. As soon as your <strong id="done-total" class="mono"></strong> Zelle shows up, your order <span id="done-where"></span>.</p>
+    <button type="button" class="btn btn-primary btn-wide" id="again">Order another</button>
+  </section>
+
+  <script src="config.js"></script>
+  <script src="../assets/api.js"></script>
+  <script src="../assets/shop.js"></script>
+</body>
+</html>

@@ -4,6 +4,8 @@
   /* Each shop overrides --accent and --highlight from its shop.json (see template/index.html). */
   --accent: #D2341B;
   --highlight: #FFC233;
+  /* Errors stay red in every shop, whatever its accent color. */
+  --danger: #C2331A;
   --cream: #FFF5DE;
   --pickle: #2E8B4E;
   --white: #FFFFFF;
@@ -284,7 +286,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 }
 .field textarea { resize: vertical; }
 .field input:focus, .field textarea:focus { outline: none; box-shadow: var(--pop); }
-.field input[aria-invalid='true'] { border-color: var(--accent); box-shadow: 4px 4px 0 var(--accent); }
+.field input[aria-invalid='true'] { border-color: var(--danger); box-shadow: 4px 4px 0 var(--danger); }
 
 /* ---------- The order ticket ---------- */
 
@@ -309,7 +311,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .ticket-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; font-weight: 600; }
 .ticket-total strong { font-size: 1.6rem; }
 .checkout { border-top: 2px dashed var(--line); padding-top: 14px; }
-.error { margin: 0 0 12px; color: var(--accent); font: 600 0.95rem/1.4 var(--sans); }
+.error { margin: 0 0 12px; color: var(--danger); font: 600 0.95rem/1.4 var(--sans); }
 .error:empty { display: none; }
 
 /* Phones: total + button pinned to the bottom of the screen. */

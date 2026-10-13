@@ -9,7 +9,8 @@ const money = n => '$' + Number(n).toFixed(2);
 function priceOf(menu, sel) {
   const cents = p => Math.round(p * 100);
   const picked = [...menu.mains.filter(m => sel.mains.includes(m.name)), ...menu.extras.filter(x => sel.extras.includes(x.name))];
-  return (picked.reduce((s, x) => s + cents(x.price), 0) * sel.qty) / 100;
+  const fee = sel.delivery ? cents(menu.shop.deliveryFee) : 0; // once per order, like the Google script
+  return (picked.reduce((s, x) => s + cents(x.price), 0) * sel.qty + fee) / 100;
 }
 
 async function api(action, data = {}) {
@@ -31,7 +32,7 @@ async function api(action, data = {}) {
 // --- Demo mode -------------------------------------------------------------
 
 const DEMO_MENU = {
-  shop: { zelleTo: SHOP.demoMenu.zelleTo },
+  shop: { zelleTo: SHOP.demoMenu.zelleTo, deliveryFee: SHOP.demoMenu.deliveryFee ?? 1 },
   mains: SHOP.demoMenu.mains,
   extras: SHOP.demoMenu.extras,
 };
@@ -82,7 +83,7 @@ function demoApi(action, data) {
     const total = priceOf(DEMO_MENU, data);
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders)); // pick up the admin page's ticks
     const id = Math.max(0, ...demoOrders.map(o => o.id)) + 1;
-    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.room, item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
+    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.delivery ? data.room : 'Pickup', item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
     demoSave();
     return wait({ id, total });
   }

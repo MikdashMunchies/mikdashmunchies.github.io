@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Orders · Eli&#39;s Kitchen</title>
+  <meta name="theme-color" content="#2A1A12">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>:root { --accent: #2B7A3D; --highlight: #F9C74F; }</style>
+</head>
+<body>
+  <header class="admin-top">
+    <h1>Orders</h1>
+    <div class="order-actions">
+      <button type="button" class="btn btn-primary" id="refresh" hidden>Refresh</button>
+      <button type="button" class="btn btn-dark" id="logout" hidden>Log out</button>
+    </div>
+  </header>
+
+  <p class="demo-banner" id="demo-banner" hidden>Demo mode: the code is <code>1234</code>.</p>
+
+  <main class="admin-main">
+    <form id="login" class="login">
+      <h2>Enter the admin code</h2>
+      <div class="field">
+        <label for="password">Code</label>
+        <input id="password" class="code-input" type="password" inputmode="numeric" autocomplete="current-password" required>
+      </div>
+      <p id="login-error" class="error" role="alert"></p>
+      <button class="btn btn-primary btn-wide" id="login-btn">Log in</button>
+    </form>
+
+    <section id="board" hidden aria-live="polite">
+      <div class="shop-status" id="shop-status">
+        <div>
+          <p class="shop-status-label">Your shop is</p>
+          <p class="shop-status-value" id="shop-state">Open</p>
+          <p class="shop-status-hint" id="shop-hint">Taking orders</p>
+        </div>
+        <button type="button" class="btn" id="toggle-open">Close shop</button>
+      </div>
+      <p id="board-error" class="error" role="alert"></p>
+      <div class="sheet-wrap">
+        <table class="sheet">
+          <thead>
+            <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Zelled</th></tr>
+          </thead>
+          <tbody id="orders"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="../assets/api.js"></script>
+  <script src="../assets/admin.js"></script>
+</body>
+</html>

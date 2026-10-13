@@ -1,6 +1,6 @@
 const SHOP = {
   "name": "David's Meat Paninis",
-  "tagline": "Pressed hot, delivered to your classroom.",
+  "tagline": "Pressed hot and made to order.",
   "item": "panini",
   "mainLabel": "Pick your meat",
   "extrasLabel": "Add-ons",
@@ -52,7 +52,8 @@ const SHOP = {
         "name": "Avocado",
         "price": 1
       }
-    ]
+    ],
+    "deliveryFee": 1
   },
   "slug": "davids-paninis"
 };

@@ -14,11 +14,21 @@
   "demoMenu": {
     "zelleTo": "(555) 123-4567",
     "mains": [
-      { "name": "Example item", "price": 5 },
-      { "name": "Another item", "price": 6 }
+      {
+        "name": "Example item",
+        "price": 5
+      },
+      {
+        "name": "Another item",
+        "price": 6
+      }
     ],
     "extras": [
-      { "name": "Example extra", "price": 1 }
-    ]
+      {
+        "name": "Example extra",
+        "price": 1
+      }
+    ],
+    "deliveryFee": 1
   }
 }

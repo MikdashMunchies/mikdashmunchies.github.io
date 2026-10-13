@@ -22,19 +22,20 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** David's Meat Paninis is PUBLIC and working end to end (site on GitHub Pages → Google
-  Sheet "dmp" in Ethan's Drive, script "Paninis Shop", deployment "davids panninis test" v3). Not yet
-  announced to buyers.
+- **Current Phase:** 5 shops built. David's Meat Paninis is LIVE end to end (Sheet "dmp", script "Paninis
+  Shop", deployment v4 — description now blank/"Untitled" in Manage deployments, same URL). Henry's Bakery,
+  Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen are published in **demo mode** (no Google Sheet yet).
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
-- **Live:** https://mikdashmunchies.github.io/davids-paninis/ (admin: + `admin.html`). QR: `qr/davids-paninis.png`.
+- **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
+  joshs-hot-dogs, elis-kitchen (admin: + `admin.html`). QR codes: `qr/<shop>.png`.
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
-- **Current Goal:** Hand the link to David and take real orders
-- **Current Priority:** Put David's real Zelle + prices into the Sheet (Settings / Menu tabs)
-- **Current Blockers:** David's Zelle phone/email still "CHANGE ME" in the Sheet's Settings tab; prices are sample prices
-- **Recommended Next Task:** Fill in Zelle + prices; delete the 2 "Test Order" rows if wanted; real panini photo; second customer via `node build.js new`
+- **Current Goal:** Make all 5 shops take real orders
+- **Current Priority:** Google Sheet + script for each of the 4 new shops (SETUP.md steps 2–3; needs Ethan's clicks for permissions), then `apiUrl` in each shop.json
+- **Current Blockers:** Real Zelle numbers and prices for every seller (all sample); David's shop is currently set to CLOSED (`open: no`) in his Sheet
+- **Recommended Next Task:** Set up the 4 Google Sheets with Ethan; fill in Zelle + prices; real food photos; delete test-order rows in David's Sheet
 
-*Last updated: 2026-10-12*
+*Last updated: 2026-10-13*
 
 ---
 
@@ -52,6 +53,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
   in the Sheet's checkbox column). No other statuses (Ethan, 2026-10-12: just name, room, order, Zelled).
 - One item per order = one or more mains combined (turkey + pastrami; prices add up) + any extras, × quantity 1–10. No free-text "Other" (can't be priced); special requests go in the "Anything special?" note. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
+- **Delivery or pickup** (Ethan, 2026-10-13): delivery adds a flat fee once per order (Settings `deliveryFee`, default $1) and needs a room; pickup is free and stores Room = "Pickup".
+- **No alcohol** on any menu: buyers are students at school (beer was dropped from Josh's list).
 - The **server** prices every order from the Sheet's Menu tab; the browser total is display-only.
 - Most buyers are on phones, so design and test phone-first.
 
@@ -73,7 +76,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price),
-  `Settings` (Key/Value: zelleTo, open), `Orders` (… Item, Extras, …, Zelled checkbox).
+  `Settings` (Key/Value: zelleTo, open, deliveryFee), `Orders` (… Item, Extras, …, Zelled checkbox).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
   list/update. The browser keeps it in `sessionStorage` only.
@@ -90,7 +93,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
 | GET | `?action=menu` | none | Menu + public settings, incl. `shop.open` |
-| POST | `{action:'order', name, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price, save → `{id,total}` |
+| POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
 | POST | `{action:'update', password, id, zelled}` | password | Tick or untick Zelled on one order |
@@ -137,7 +140,8 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [x] **Milestone 2: Go live**: script deployed, GitHub Pages under MikdashMunchies, real test orders, QR code
 - [ ] **Milestone 2b: Launch David**: real Zelle + prices in the Sheet, real panini photo, share link/QR
 - [x] **Milestone 3a: Template**: one repo, folder per shop, `node build.js`
-- [ ] **Milestone 3b: Second customer** using `node build.js new`
+- [x] **Milestone 3b: More shops**: Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen (demo mode)
+- [ ] **Milestone 3c: New shops live**: a Google Sheet + script per shop, real menus/Zelle
 
 ## Important Decisions
 

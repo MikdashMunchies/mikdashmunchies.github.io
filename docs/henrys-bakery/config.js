@@ -1,0 +1,50 @@
+const SHOP = {
+  "name": "Henry's Bakery",
+  "tagline": "Fresh muffins, cakes and snacks.",
+  "item": "treat box",
+  "mainLabel": "Pick your treats",
+  "extrasLabel": "Extras",
+  "notePlaceholder": "Warm it up, no nuts…",
+  "sticker": "Baked fresh",
+  "image": "bakery.svg",
+  "imageAlt": "A blueberry muffin next to a slice of layer cake",
+  "accent": "#B5306B",
+  "highlight": "#FFC7DA",
+  "apiUrl": "",
+  "demoMenu": {
+    "zelleTo": "(555) 123-4567",
+    "deliveryFee": 1,
+    "mains": [
+      {
+        "name": "Blueberry muffin",
+        "price": 3
+      },
+      {
+        "name": "Chocolate chip muffin",
+        "price": 3
+      },
+      {
+        "name": "Banana nut muffin",
+        "price": 3
+      },
+      {
+        "name": "Double chocolate muffin",
+        "price": 3
+      },
+      {
+        "name": "Chocolate cake slice",
+        "price": 4
+      },
+      {
+        "name": "Vanilla cake slice",
+        "price": 4
+      },
+      {
+        "name": "Snack pack",
+        "price": 2
+      }
+    ],
+    "extras": []
+  },
+  "slug": "henrys-bakery"
+};

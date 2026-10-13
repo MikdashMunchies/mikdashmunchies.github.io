@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -40 320 300">
+  <style>
+    .steam path { animation: steam 2.4s ease-in-out infinite; }
+    .steam path:nth-child(2) { animation-delay: .5s; }
+    .steam path:nth-child(3) { animation-delay: 1s; }
+    @keyframes steam { 0% { opacity: 0; transform: translateY(8px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+    @media (prefers-reduced-motion: reduce) { .steam path { animation: none; } }
+  </style>
+  <ellipse cx="165" cy="238" rx="135" ry="13" fill="#1A1410" opacity=".12"/>
+
+  <!-- Soda cup -->
+  <path d="M262 28 L276 92" stroke="#1A1410" stroke-width="16" stroke-linecap="round"/>
+  <path d="M262 28 L276 92" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M222 100 L290 100 L281 226 L231 226 Z" fill="#D72638" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M226 150 Q256 138 286 150 L285 166 Q256 154 227 166 Z" fill="#FFFFFF"/>
+  <rect x="216" y="88" width="80" height="16" rx="7" fill="#F4F4F4" stroke="#1A1410" stroke-width="4"/>
+
+  <!-- Drumstick: bone behind the meat -->
+  <path d="M146 168 L200 218" stroke="#1A1410" stroke-width="26" stroke-linecap="round"/>
+  <path d="M146 168 L200 218" stroke="#FFF8EC" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="196" cy="226" r="11" fill="#FFF8EC" stroke="#1A1410" stroke-width="4"/>
+  <circle cx="210" cy="212" r="11" fill="#FFF8EC" stroke="#1A1410" stroke-width="4"/>
+  <path d="M52 118 C50 66 124 42 164 80 C198 112 190 170 144 186 C108 198 56 176 52 118 Z" fill="#C77A2E" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <g fill="#E3A24F" stroke="#1A1410" stroke-width="2.5">
+    <circle cx="86" cy="96" r="9"/>
+    <circle cx="120" cy="80" r="8"/>
+    <circle cx="150" cy="110" r="9"/>
+    <circle cx="104" cy="128" r="10"/>
+    <circle cx="76" cy="142" r="8"/>
+    <circle cx="138" cy="152" r="8"/>
+  </g>
+
+  <g class="steam" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round" opacity=".35">
+    <path d="M80 50 q-10 -14 0 -28 t0 -28"/>
+    <path d="M115 38 q-10 -14 0 -28 t0 -28"/>
+    <path d="M150 50 q-10 -14 0 -28 t0 -28"/>
+  </g>
+</svg>
