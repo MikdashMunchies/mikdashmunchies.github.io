@@ -53,6 +53,7 @@ function setup() {
     ['Key', 'Value'],
     ['zelleTo', "CHANGE ME: the seller's Zelle phone or email"],
     ['open', 'yes'],
+    ['deliveryFee', 1],
   ]);
   make('Orders', [ORDER_HEADERS]);
   const props = PropertiesService.getScriptProperties();
@@ -74,16 +75,20 @@ function getMenu_() {
   });
   // Open unless the sheet says no (also covers an unticked checkbox, which reads as "false").
   menu.shop.open = !/^(no|false|closed)$/i.test(menu.shop.open || '');
+  // Delivery costs a flat fee per order (default $1); pickup is free.
+  const fee = Number(menu.shop.deliveryFee);
+  menu.shop.deliveryFee = menu.shop.deliveryFee !== undefined && menu.shop.deliveryFee !== '' && fee >= 0 ? fee : 1;
   return menu;
 }
 
 // Works out the real price from the Menu tab. Anything the browser says about price is ignored.
 function priceOrder_(menu, o) {
   const name = clean_(o.name, 40);
-  const room = clean_(o.room, 20);
+  const delivery = o.delivery === true;
+  const room = delivery ? clean_(o.room, 20) : 'Pickup';
   const note = clean_(o.note, 200);
   if (!name) throw new Error('Please enter your name.');
-  if (!room) throw new Error('Please enter your room number.');
+  if (!room) throw new Error('Please enter your room number for delivery.');
   // Mains can be combined (turkey + pastrami in one); their prices add up.
   const mains = pickItems_(menu.mains, o.mains);
   if (!mains.length) throw new Error('Please pick at least one item.');
@@ -92,7 +97,8 @@ function priceOrder_(menu, o) {
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new Error('Quantity must be 1 to ' + MAX_QTY + '.');
   // Cents, so 0.1 + 0.2 style rounding never shows up on a bill.
   const unit = [...mains, ...extras].reduce((sum, x) => sum + cents_(x.price), 0);
-  return { name, room, note, mains: mains.map(m => m.name), extras: extras.map(x => x.name), qty, total: (unit * qty) / 100 };
+  const fee = delivery ? cents_(menu.shop.deliveryFee) : 0; // once per order, not per item
+  return { name, room, note, mains: mains.map(m => m.name), extras: extras.map(x => x.name), qty, total: (unit * qty + fee) / 100 };
 }
 
 function pickItems_(list, names) {

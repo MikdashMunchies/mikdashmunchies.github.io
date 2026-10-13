@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>David&#39;s Meat Paninis</title>
-  <meta name="description" content="David&#39;s Meat Paninis: Pressed hot, delivered to your classroom. Order on your phone, pay with Zelle.">
+  <meta name="description" content="David&#39;s Meat Paninis: Pressed hot and made to order. Order on your phone, pay with Zelle.">
   <meta name="theme-color" content="#FFC233">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,12 +16,12 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-text">
-        <p class="eyebrow">Delivered to your room · Pay with Zelle</p>
+        <p class="eyebrow">Delivery or pickup · Pay with Zelle</p>
         <h1>
           <span class="welcome">Welcome to</span>
           <span class="shop-name">David&#39;s Meat Paninis</span>
         </h1>
-        <p class="tagline">Pressed hot, delivered to your classroom.</p>
+        <p class="tagline">Pressed hot and made to order.</p>
         <a class="btn btn-primary btn-big" href="#order">Build your panini</a>
       </div>
 
@@ -69,12 +69,20 @@
       </fieldset>
 
       <fieldset class="step">
+        <legend><span class="step-num"></span>Delivery or pickup</legend>
+        <div class="tiles">
+          <label class="tile"><input type="radio" name="how" value="delivery" checked><span class="opt-name">Deliver to my room</span><span class="opt-price" id="fee-label">+$1.00</span></label>
+          <label class="tile"><input type="radio" name="how" value="pickup"><span class="opt-name">I'll pick it up</span><span class="opt-price">Free</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="step">
         <legend><span class="step-num"></span>Your details</legend>
         <div class="field">
           <label for="name">Name</label>
           <input id="name" autocomplete="name" maxlength="40" required>
         </div>
-        <div class="field">
+        <div class="field" id="room-field">
           <label for="room">Room number</label>
           <input id="room" maxlength="20" required autocomplete="off" placeholder="e.g. 204">
         </div>
@@ -124,7 +132,7 @@
     <p class="order-num mono">Order #<span id="done-id"></span></p>
     <div class="done-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg></div>
     <h2 id="done-title">Order completed</h2>
-    <p>You're on the list. As soon as your <strong id="done-total" class="mono"></strong> Zelle shows up, your panini heads to room <strong id="done-room"></strong>.</p>
+    <p>You're on the list. As soon as your <strong id="done-total" class="mono"></strong> Zelle shows up, your panini <span id="done-where"></span>.</p>
     <button type="button" class="btn btn-primary btn-wide" id="again">Order another</button>
   </section>
 

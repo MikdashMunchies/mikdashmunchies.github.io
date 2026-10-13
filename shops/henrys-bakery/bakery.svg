@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 260">
+  <style>
+    .sparkle { animation: twinkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .sparkle:nth-of-type(2) { animation-delay: .8s; }
+    .sparkle:nth-of-type(3) { animation-delay: 1.6s; }
+    @keyframes twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { .sparkle { animation: none; } }
+  </style>
+  <ellipse cx="165" cy="238" rx="135" ry="13" fill="#1A1410" opacity=".12"/>
+
+  <!-- Cake slice -->
+  <path d="M178 132 L292 112 L292 214 L178 230 Z" fill="#F3D19C" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M178 172 L292 154 L292 168 L178 186 Z" fill="#E85D8A" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M178 132 L292 112 L262 92 L168 120 Z" fill="#FFE3EC" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M178 132 L292 112 L292 124 Q270 132 262 124 Q248 136 236 128 Q222 140 210 132 Q196 142 178 140 Z" fill="#FFE3EC" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="236" cy="98" r="11" fill="#D72638" stroke="#1A1410" stroke-width="4"/>
+  <path d="M236 87 Q240 72 252 68" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Muffin -->
+  <path d="M58 152 L162 152 L150 228 L70 228 Z" fill="#E85D8A" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <g stroke="#1A1410" stroke-width="3" stroke-linecap="round" opacity=".55">
+    <path d="M80 156 L86 224 M100 156 L103 224 M120 156 L118 224 M140 156 L134 224"/>
+  </g>
+  <path d="M46 156 C40 96 180 94 174 156 Z" fill="#D9A066" stroke="#1A1410" stroke-width="4" stroke-linejoin="round"/>
+  <g fill="#3B4BA0" stroke="#1A1410" stroke-width="3">
+    <circle cx="82" cy="132" r="8"/>
+    <circle cx="112" cy="114" r="8"/>
+    <circle cx="142" cy="130" r="8"/>
+    <circle cx="118" cy="142" r="7"/>
+    <circle cx="96" cy="146" r="6"/>
+  </g>
+
+  <!-- Sparkles -->
+  <path class="sparkle" d="M60 70 l5 12 l12 5 l-12 5 l-5 12 l-5 -12 l-12 -5 l12 -5 Z" fill="#FFC233" stroke="#1A1410" stroke-width="3" stroke-linejoin="round"/>
+  <path class="sparkle" d="M150 40 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4 Z" fill="#FFC233" stroke="#1A1410" stroke-width="3" stroke-linejoin="round"/>
+  <path class="sparkle" d="M295 60 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4 Z" fill="#FFC233" stroke="#1A1410" stroke-width="3" stroke-linejoin="round"/>
+</svg>

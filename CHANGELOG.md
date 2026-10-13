@@ -6,6 +6,18 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ---
 
+## 2026-10-13
+
+### Added
+- Delivery or pickup on every shop: delivery +$1 per order (Settings `deliveryFee`), pickup free; room only asked for delivery. 2 new tests.
+- Four new shops (demo mode): Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen — own colors, drawings, menus; QR codes for all.
+- Errors use a fixed red (`--danger`) in every shop.
+
+### Changed
+- "Classroom" removed from descriptions; banner now says "Delivery or pickup".
+- QR maker tries other QR patterns if a code doesn't scan back.
+- David's live Google script updated to version 4 (delivery fee).
+
 ## 2026-10-11 → 2026-10-12 (first session)
 
 ### Added

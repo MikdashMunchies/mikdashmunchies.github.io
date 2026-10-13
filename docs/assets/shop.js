@@ -50,6 +50,7 @@ function selection() {
     extras: [...document.querySelectorAll('input[name=extra]:checked')].map(i => i.value),
     qty,
     name: $('name').value.trim(),
+    delivery: document.querySelector('input[name=how]:checked')?.value === 'delivery',
     room: $('room').value.trim(),
     note: $('note').value.trim(),
   };
@@ -71,7 +72,10 @@ function update() {
     menu.extras.filter(x => sel.extras.includes(x.name)).forEach(x => lines.push(line('+ ' + x.name, money(x.price))));
     if (qty > 1) lines.push(line('× ' + qty, ''));
   }
+  if (sel.delivery) lines.push(line('Delivery', money(menu.shop.deliveryFee)));
   $('ticket-lines').replaceChildren(...lines);
+  $('fee-label').textContent = '+' + money(menu.shop.deliveryFee);
+  $('room-field').hidden = !sel.delivery;
   $('total').textContent = money(priceOf(menu, sel));
   $('qty').textContent = qty;
   $('qty-minus').disabled = qty <= 1;
@@ -91,7 +95,7 @@ $('order-form').addEventListener('submit', async e => {
   if (!menu) return;
   const sel = selection();
   if (!sel.mains.length) return fail('Pick at least one to start your ' + SHOP.item + '.');
-  const missing = !sel.name ? 'name' : !sel.room ? 'room' : null;
+  const missing = !sel.name ? 'name' : sel.delivery && !sel.room ? 'room' : null;
   if (missing) {
     $(missing).setAttribute('aria-invalid', 'true');
     $(missing).focus();
@@ -108,7 +112,7 @@ $('order-form').addEventListener('submit', async e => {
   }
   $('pay-amount').textContent = money(priceOf(menu, sel));
   $('zelle-to').textContent = menu.shop.zelleTo || '';
-  $('memo').textContent = `${sel.name} – Room ${sel.room}`;
+  $('memo').textContent = sel.delivery ? `${sel.name} – Room ${sel.room}` : `${sel.name} – Pickup`;
   $('pay-error').textContent = '';
   show('pay');
 });
@@ -139,7 +143,7 @@ $('place').addEventListener('click', async () => {
     const result = await api('order', sel);
     $('done-id').textContent = result.id;
     $('done-total').textContent = money(result.total);
-    $('done-room').textContent = sel.room;
+    $('done-where').textContent = sel.delivery ? `heads to room ${sel.room}` : 'will be ready for pickup';
     show('done');
   } catch (err) {
     $('pay-error').textContent = err.message;
