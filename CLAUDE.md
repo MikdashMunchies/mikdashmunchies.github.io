@@ -24,7 +24,9 @@
 
 - **Current Phase:** 5 shops built. David's Meat Paninis is LIVE end to end (Sheet "dmp", script "Paninis
   Shop", deployment v4 — description now blank/"Untitled" in Manage deployments, same URL). Henry's Bakery,
-  Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen are published in **demo mode** (no Google Sheet yet).
+  Yitz's Grill, Josh's Hot Dog Stand are published in **demo mode** (no Google Sheet yet). **Eli's Kitchen
+  is connected** (Sheet "Eli's Kitchen - Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real
+  menu loaded 2026-10-15) but set **closed** until his Zelle is in Settings.
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
 - **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
