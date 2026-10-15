@@ -152,6 +152,7 @@ function demoMenu() {
   const toItem = it => {
     const x = { name: it.name, price: Number(it.price) };
     if (it.sale !== '' && it.sale != null && Number(it.sale) < x.price) Object.assign(x, { was: x.price, price: Number(it.sale) });
+    if (it.soldOut) x.soldOut = true;
     return x;
   };
   return { ...DEMO_MENU, mains: items.filter(i => i.type === 'main').map(toItem), extras: items.filter(i => i.type === 'extra').map(toItem) };

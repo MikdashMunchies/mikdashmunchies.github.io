@@ -31,11 +31,13 @@ async function init() {
     $('closed').hidden = false;
     return;
   }
-  if (menu.mains.length) {
-    $('from-price').textContent = 'from ' + money(Math.min(...menu.mains.map(m => m.price)));
+  const available = menu.mains.filter(m => !m.soldOut);
+  if (available.length) {
+    $('from-price').textContent = 'from ' + money(Math.min(...available.map(m => m.price)));
     $('from-price').hidden = false;
   }
-  $('mains').replaceChildren(...menu.mains.map((m, i) => option('tile', 'main', m, '', i === 0)));
+  const first = menu.mains.find(m => !m.soldOut); // start with the first one that can be ordered
+  $('mains').replaceChildren(...menu.mains.map(m => option('tile', 'main', m, '', m === first)));
   $('mains').removeAttribute('aria-busy');
   $('extras').replaceChildren(...menu.extras.map(x => option('chip', 'extra', x, '+')));
   // A shop with no extras skips that step entirely.
@@ -47,8 +49,14 @@ async function init() {
 // An item on sale (`was` = its regular price) shows the old price crossed out and a Sale sticker.
 function option(className, group, item, prefix, checked = false) {
   const label = document.createElement('label');
-  label.className = className + (item.was ? ' on-sale' : '');
-  const input = Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked });
+  label.className = className + (item.was ? ' on-sale' : '') + (item.soldOut ? ' sold-out' : '');
+  const input = Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked, disabled: !!item.soldOut });
+  if (item.soldOut) {
+    // Still listed so buyers know it exists; it just can't be picked today.
+    label.append(input, Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name }),
+      Object.assign(document.createElement('span'), { className: 'opt-price', textContent: 'Sold out' }));
+    return label;
+  }
   const name = Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name });
   const price = Object.assign(document.createElement('span'), { className: 'opt-price', textContent: prefix + money(item.price) });
   if (item.was) {

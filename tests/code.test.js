@@ -398,10 +398,10 @@ test('admin saves the whole menu: names, prices, sale prices, new and removed it
   ] });
   assert.deepStrictEqual(r, { ok: true });
   assert.deepStrictEqual(sheets.Menu.rows, [
-    ['Type', 'Name', 'Price', 'Sale price'],
-    ['main', 'Turkey', 6.5, ''],
-    ['main', 'Roast beef', 8, 6.75],
-    ['extra', '=HACK()', 1, ''],
+    ['Type', 'Name', 'Price', 'Sale price', 'Sold out'],
+    ['main', 'Turkey', 6.5, '', false],
+    ['main', 'Roast beef', 8, 6.75, false],
+    ['extra', '=HACK()', 1, '', false],
   ]);
   assert.ok(sheets.Menu.raw.some(row => row[1] === "'=HACK()"), 'names are written as plain text, never formulas');
   const m = get('menu');
@@ -550,4 +550,33 @@ test('bad hours are refused and nothing is changed', () => {
     assert.match(post({ action: 'setHours', password: PW, hours }).error || '', message);
     assert.strictEqual(JSON.stringify(sheets.Settings.rows), before);
   }
+});
+
+test('a sold-out item shows as sold out on the menu and cannot be ordered', () => {
+  const { get, post, sheets } = load({ menuRows: [
+    ['Type', 'Name', 'Price', 'Sale price', 'Sold out'],
+    ['main', 'Turkey', 6, '', true],
+    ['main', 'Pastrami', 7.5, '', ''],
+    ['extra', 'Pickles', 0.5, '', 'TRUE'],
+  ] });
+  const m = get('menu');
+  assert.deepStrictEqual(m.mains.map(x => [x.name, !!x.soldOut]), [['Turkey', true], ['Pastrami', false]]);
+  assert.strictEqual(m.extras[0].soldOut, true);
+  assert.match(post({ ...good, mains: ['Turkey'], extras: [] }).error, /Turkey.*sold out/i);
+  assert.match(post({ ...good, mains: ['Pastrami'], extras: ['Pickles'] }).error, /Pickles.*sold out/i);
+  assert.strictEqual(sheets.Orders.rows.length, 1); // nothing saved
+  assert.strictEqual(post({ ...good, mains: ['Pastrami'], extras: [] }).id, 1);
+});
+
+test('admin marks items sold out (and back) with saveMenu', () => {
+  const { post, get, sheets } = load();
+  post({ action: 'saveMenu', password: PW, items: [
+    { type: 'main', name: 'Turkey', price: 6, sale: '', soldOut: true },
+    { type: 'main', name: 'Pastrami', price: 7.5, sale: '', soldOut: false },
+  ] });
+  assert.deepStrictEqual(sheets.Menu.rows[0], ['Type', 'Name', 'Price', 'Sale price', 'Sold out']);
+  assert.deepStrictEqual(sheets.Menu.rows.slice(1).map(r => r[4]), [true, false]);
+  assert.deepStrictEqual(get('menu').mains.map(x => !!x.soldOut), [true, false]);
+  post({ action: 'saveMenu', password: PW, items: [{ type: 'main', name: 'Turkey', price: 6, sale: '', soldOut: false }] });
+  assert.strictEqual(get('menu').mains[0].soldOut, undefined);
 });

@@ -24,7 +24,9 @@
 
 - **Current Phase:** 5 shops built. David's Meat Paninis is LIVE end to end (Sheet "dmp", script "Paninis
   Shop", deployment v4 — description now blank/"Untitled" in Manage deployments, same URL). Henry's Bakery,
-  Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen are published in **demo mode** (no Google Sheet yet).
+  Yitz's Grill, Josh's Hot Dog Stand are published in **demo mode** (no Google Sheet yet). **Eli's Kitchen
+  is connected** (Sheet "Eli's Kitchen - Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real
+  menu loaded 2026-10-15) but set **closed** until his Zelle is in Settings.
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
 - **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
@@ -81,7 +83,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price, Sale price — optional, must be
-  lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it),
+  lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it;
+  Sold out — checkbox; item stays listed with `soldOut: true`, can't be picked, server refuses orders with it),
   `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail, hoursSun…hoursSat), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
   header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
@@ -110,7 +113,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   then the log says "permission"; fix by removing the app at myaccount.google.com/connections and re-running.
 - **Maaser box (admin):** 10% of **Zelled** order totals (incl. delivery fees), this month + all
   time, computed in the browser by `maaserOf()` in `api.js` from the `list` answer. No backend change.
-- **Admin Menu tab:** edit names/prices, add/remove items and extras, **Discount** = a sale price per item
+- **Admin Menu tab:** edit names/prices, add/remove items and extras, **Sold out** toggle per item, **Discount** = a sale price per item
   (Ethan, 2026-10-15: "new price", not a percent). Loads once per login (never on auto-refresh, which would wipe
   edits); Save sends `saveMenu`; the shop shows ~~old~~ new price + a Sale sticker. Demo mode keeps edits in
   localStorage (`demoMenu:<slug>`).
@@ -130,7 +133,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` (the switch), `closedBy`, `hours`, `today`, `nextOpen` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop → same status fields |
 | POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
-| POST | `{action:'saveMenu', password, items:[{type,name,price,sale}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
+| POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).

@@ -261,7 +261,7 @@ async function loadMenu() {
   try {
     const m = await api('menu');
     // The menu gives an item on sale as price = sale price, was = regular price.
-    const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '' });
+    const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '', soldOut: !!x.soldOut });
     renderMenu([...m.mains.map(toRow('main')), ...m.extras.map(toRow('extra'))]);
     setMenuStatus('');
   } catch (err) {
@@ -311,6 +311,14 @@ function menuRow(it) {
   const [saleField, sale] = field('menu-sale', 'Sale price $', priceText(it.sale), 'm-sale', { inputMode: 'decimal' });
   const discount = button('menu-discount', 'Discount');
   const remove = button('menu-remove', 'Remove');
+  // Sold out: a toggle. The item stays on the menu but buyers can't pick it until it's switched back.
+  const soldOut = button('menu-sold-out', 'Sold out');
+  const setSoldOut = on => {
+    soldOut.setAttribute('aria-pressed', on);
+    row.classList.toggle('is-sold-out', on);
+  };
+  setSoldOut(!!it.soldOut);
+  soldOut.addEventListener('click', () => { setSoldOut(soldOut.getAttribute('aria-pressed') !== 'true'); markDirty(); });
   remove.setAttribute('aria-label', 'Remove ' + (it.name || 'this item'));
   const endSale = button('menu-end-sale', 'End sale');
   saleField.append(endSale);
@@ -327,12 +335,12 @@ function menuRow(it) {
   remove.addEventListener('click', () => { row.remove(); markDirty(); });
   [name, price, sale].forEach(i => i.addEventListener('input', markDirty));
 
-  row.append(nameField, priceField, discount, remove, saleField);
+  row.append(nameField, priceField, discount, soldOut, remove, saleField);
   return row;
 }
 
 function addRow(type) {
-  const row = menuRow({ type, name: '', price: '', sale: '' });
+  const row = menuRow({ type, name: '', price: '', sale: '', soldOut: false });
   $('menu-' + type).append(row);
   row.querySelector('.m-name').focus();
   markDirty();
@@ -348,6 +356,7 @@ function readMenu() {
     name: row.querySelector('.m-name').value.trim(),
     price: dollars(row.querySelector('.m-price').value),
     sale: row.querySelector('.menu-sale').hidden ? '' : dollars(row.querySelector('.m-sale').value),
+    soldOut: row.querySelector('.menu-sold-out').getAttribute('aria-pressed') === 'true',
   }));
 }
 
