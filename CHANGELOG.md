@@ -6,6 +6,22 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ---
 
+## 2026-10-16
+
+### Added
+- Item photos and descriptions: admin Menu tab gets Add / Change / Remove photo (main items) and a Description
+  (all items, ≤120 chars). Photos are shrunk in the browser and stored in the Menu tab's new Picture column, so no
+  new Google permission. Buyers see a 64px thumbnail on the tile and the description under the name.
+- Several opening times per day ("08:15-09:00, 13:00-16:00"): closed in between, "opens today at 1:00 PM" during
+  the break. Admin Hours tab: "+ Add another time" and ✕. Same rules in the Google script and the demo copy.
+- Sellers page: "Photos and descriptions" and "Opening hours, with breaks" cards (artifact republished).
+- 13 new tests (78 total).
+
+### Changed
+- Eli's live Google script updated to the latest `Code.gs` (Ethan). David's not yet.
+
+---
+
 ## 2026-10-15
 
 ### Added

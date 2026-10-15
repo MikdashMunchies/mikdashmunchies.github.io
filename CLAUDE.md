@@ -26,18 +26,18 @@
   "Paninis Shop", active deployment "Untitled" `AKfycbxvJTUNcf…`) and Eli's Kitchen (Sheet "Eli's Kitchen -
   Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real menu loaded 2026-10-15). Henry's
   Bakery, Yitz's Grill, Josh's Hot Dog Stand are in **demo mode** (no Google Sheet yet).
-- **Live scripts (2026-10-15, end of day):**
-  - **Eli's:** deployment **version 5** = `Code.gs` from `b5c4859` (hours + menu editor + sold out + **cash**;
-    editor hash `e3-f2-63-f5`). Checked live: menu has `cash: true`, 10 real items, list works.
-  - **David's:** `Code.gs` from `1d98dc5` (hours + menu editor + sold out, no cash). Until cash is deployed there,
-    his shop hides the cash choice (old script sends no `cash`), but his admin page wrongly shows "Cash: Accepted"
-    and the switch errors ("Unknown action"). Deploy the latest `Code.gs` to fix.
-  - Neither shop has hours set (= open per the switch). Neither has Telegram (no bot yet) or `notifyEmail` filled.
-  - **Photos + split hours (on `main` 2026-10-16): Eli's deployed** (Ethan, 2026-10-16; live menu checked OK, but
-    old vs new can't be told apart until a photo is saved). **David's not yet:** his admin Menu tab shows Add photo /
-    Description but the old script **drops them on Save**, and a split-hours day is refused. Deploy there too.
-  - **Eli asked for the split hours** (open about 8:15–9:00 and 1:00–4:00, closed in between). Exact days/times
-    still to come from Ethan; then enter them on Eli's admin Hours tab and check his live menu's `hours`/`open`.
+- **Live scripts (2026-10-16, end of day):**
+  - **Eli's:** latest `Code.gs` (`main` as of `c5e718d`: photos + descriptions + split hours + cash), deployed
+    by Ethan 2026-10-16. Live menu checked: 10 items, open, cash on. Not yet proven to be the new code (no photo
+    saved yet; old and new answer the same until one is).
+  - **David's:** still `Code.gs` from `1d98dc5` (hours + menu editor + sold out). Missing cash, photos, split
+    hours: his shop hides cash, but his admin page shows "Cash: Accepted" (switch errors "Unknown action"), shows
+    Add photo / Description that the old script **drops on Save**, and refuses a day with a break. Ethan: "later".
+  - Live check 2026-10-16: neither shop has hours saved (= open whenever the switch is on). Neither has Telegram
+    (no bot yet) or `notifyEmail` filled.
+  - **Eli is the client who asked for split hours** (open about 8:15–9:00 and 1:00–4:00, closed in between).
+    Ethan can now see "+ Add another time" on Eli's Hours tab (needed Ctrl+Shift+R: his browser held the old page).
+    Exact days/times not entered yet.
 - **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
   script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
   empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
@@ -49,8 +49,9 @@
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
 - **Current Goal:** Make all 5 shops take real orders; work through the client's feature list (below).
-- **Current Priority:** Eli's Zelle (his shop is open with Zelle "CHANGE ME"); deploy the latest `Code.gs` to
-  David's script (cash), together with Telegram once Ethan has the bot; then Google Sheet + script for Henry's,
+- **Current Priority:** Eli's Zelle (his shop is open with Zelle "CHANGE ME") and his split hours on the Hours tab;
+  deploy the latest `Code.gs` to David's script (cash, photos, split hours), together with Telegram once Ethan has
+  the bot; then Google Sheet + script for Henry's,
   Yitz's, Josh's (SETUP.md steps 2–3; needs Ethan's clicks), then `apiUrl` in each shop.json.
 - **Two Claude sessions worked on this repo on 2026-10-15** (this one: notifications → cash; another: opening
   hours, in worktree `SchoolFoodSites-hours`). Both deployed to the live scripts. Before deploying `Code.gs`, check
@@ -59,17 +60,19 @@
   `node build.js` from `features/index.html`, linked from the README) and as a private Claude artifact
   https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw. After editing the file: `node build.js` + republish the artifact.
 - **Client feature list (2026-10-15)** — done: menu, free editing (admin Menu tab), order form, notifications,
-  maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash, photos + descriptions
-  per item (2026-10-16). **Not built:**
+  maaser, analytics, Zelle, opening hours + auto-close (incl. several times per day with breaks, 2026-10-16), sale
+  prices, per-item sold out, cash, photos + descriptions per item (2026-10-16). **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
 - **Current Blockers:** Eli's Zelle number/email (his shop is **open** — someone reopened it ~21:00 after Claude
   closed it; ask Ethan). David's real Zelle + prices (sample). Telegram bot (Ethan, "later").
-- **Recommended Next Task:** Get Eli's Zelle → set it in his Sheet (or close his shop). When Ethan has the bot:
+- **Recommended Next Task:** Get Eli's Zelle → set it in his Sheet (or close his shop). Get Eli's exact hours →
+  enter on his Hours tab → check the live menu's `hours`/`open`/`nextOpen`. Save one photo on Eli's Menu tab to
+  prove his new script is live. Deploy latest `Code.gs` to David's. When Ethan has the bot:
   token into both scripts, `telegramChats` → chat ids into Settings, `testNotify`, then deploy the latest
   `Code.gs` to David's script (cash + all) and check live. Then David's real hours; then the next client feature.
 
-*Last updated: 2026-10-15*
+*Last updated: 2026-10-16*
 
 ---
 
@@ -217,7 +220,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [x] **Milestone 3a: Template**: one repo, folder per shop, `node build.js`
 - [x] **Milestone 3b: More shops**: Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen (demo mode)
 - [ ] **Milestone 3c: New shops live**: a Google Sheet + script per shop, real menus/Zelle (Eli done)
-- [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours)
+- [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours; breaks 2026-10-16)
 - [x] **Milestone 4b: Seller tools**: order alerts (Telegram/email — built, not set up live), maaser, Done column,
   Analytics, Menu tab (edit/add/remove, sale price, sold out), cash + Accept-cash switch
 - [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop
