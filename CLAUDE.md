@@ -22,23 +22,34 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** 5 shops built. David's Meat Paninis is LIVE end to end (Sheet "dmp", script "Paninis
-  Shop", deployment v4 — description now blank/"Untitled" in Manage deployments, same URL). Henry's Bakery,
-  Yitz's Grill, Josh's Hot Dog Stand are published in **demo mode** (no Google Sheet yet). **Eli's Kitchen
-  is connected** (Sheet "Eli's Kitchen - Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real
-  menu loaded 2026-10-15) but set **closed** until his Zelle is in Settings.
+- **Current Phase:** 5 shops built. **Two connected to Google:** David's Meat Paninis (Sheet "dmp", script
+  "Paninis Shop", active deployment "Untitled" `AKfycbxvJTUNcf…`) and Eli's Kitchen (Sheet "Eli's Kitchen -
+  Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real menu loaded 2026-10-15). Henry's
+  Bakery, Yitz's Grill, Josh's Hot Dog Stand are in **demo mode** (no Google Sheet yet).
+- **Live scripts (2026-10-15):** both David's and Eli's run `Code.gs` from commit `1d98dc5` = opening hours +
+  menu editor + per-item sold out (Ethan deployed both; checked live: menu answer has `closedBy`/`hours`/`today`).
+  **Not yet deployed: the cash feature** (`c92fe14`, merged after) changed `Code.gs` again — paste + New version
+  in both scripts before cash works. Neither shop has hours set yet (= open per the switch, as before).
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
 - **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
   joshs-hot-dogs, elis-kitchen (admin: + `admin.html`). QR codes: `qr/<shop>.png`.
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
-- **Current Goal:** Make all 5 shops take real orders
-- **Current Priority:** Google Sheet + script for each of the 4 new shops (SETUP.md steps 2–3; needs Ethan's clicks for permissions), then `apiUrl` in each shop.json
-- **Current Blockers:** Real Zelle numbers and prices for every seller (all sample); David's shop is currently set to CLOSED (`open: no`) in his Sheet
-- **Recommended Next Task:** Set up the 4 Google Sheets with Ethan; fill in Zelle + prices; real food photos; delete test-order rows in David's Sheet
+- **Current Goal:** Make all 5 shops take real orders; work through the client's feature list (below).
+- **Current Priority:** Deploy the latest `Code.gs` (cash) to David's + Eli's scripts; Google Sheet + script for
+  Henry's, Yitz's, Josh's (SETUP.md steps 2–3; needs Ethan's clicks), then `apiUrl` in each shop.json.
+- **Client feature list (2026-10-15)** — done: menu, free editing (admin Menu tab), order form, notifications,
+  maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash. **Not built:**
+  surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), pictures +
+  descriptions per item, order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
+  free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
+- **Current Blockers:** Real Zelle numbers and prices for every seller (all sample). Eli's live shop showed
+  **open** at ~21:00 2026-10-15 although it was set closed earlier that day — confirm with Ethan it was reopened on purpose.
+- **Recommended Next Task:** Deploy cash `Code.gs` to both scripts; set real hours in David's admin Hours tab
+  (and check the Sheet's File → Settings time zone); then the next client feature Ethan picks.
 
-*Last updated: 2026-10-13*
+*Last updated: 2026-10-15*
 
 ---
 
@@ -182,7 +193,8 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [ ] **Milestone 2b: Launch David**: real Zelle + prices in the Sheet, real panini photo, share link/QR
 - [x] **Milestone 3a: Template**: one repo, folder per shop, `node build.js`
 - [x] **Milestone 3b: More shops**: Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen (demo mode)
-- [ ] **Milestone 3c: New shops live**: a Google Sheet + script per shop, real menus/Zelle
+- [ ] **Milestone 3c: New shops live**: a Google Sheet + script per shop, real menus/Zelle (Eli done)
+- [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours)
 
 ## Important Decisions
 
@@ -200,6 +212,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |
 | 2026-10-15 | Order notifications via a Telegram bot | Free, reliable from Apps Script, any phone | ntfy.sh push (**tried and shipped first, superseded same day**: its free limit is per IP and all Apps Script shares Google's IPs → 429 "daily quota reached"); paid ntfy (~$5/mo); Gmail email (one ~100/day quota shared by every shop under Ethan's account); Twilio SMS (~$1–2/mo + ~1¢/text + A2P registration); email-to-text (AT&T shut down 2025) |
 | 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
+| 2026-10-15 | Opening hours = one Settings row per day (`hoursSun`…), checked by the Google script in the Sheet's time zone; the Close button wins over hours; no rows = always open | Ethan picked per-day hours (Shabbat: Friday early close, Saturday closed; nightly 12am close); server-side so a phone clock can't bypass it; existing shops keep working untouched | Same hours every day (no early Friday); one JSON cell (unreadable for sellers in the Sheet); browser-only check (bypassable); Open overriding hours (could force 3am orders) |
 | 2026-10-15 | Analytics computed in the browser from the `list` answer | No new backend action or Google permission; works in demo mode | A server-side stats action |
 | 2026-10-15 | Maaser = 10% of Zelled **sales**, shown on admin; no cost tracking | Ethan's choice; simplest; paid orders only | 10% of profit with a Costs tab (more accurate, more input); one cost box |
 | 2026-10-13 | Home page + README link table generated by `node build.js`; shared CSS/JS links fingerprinted (`?v=<sha1>`) | New shops appear everywhere automatically; GitHub Pages' ~10-min browser cache served stale styles after updates | Hand-maintained link lists (go stale); telling visitors to hard-refresh |
@@ -215,9 +228,14 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - Admin refresh vs. tick race: a `list` that started before a tick returns old data; `load()`
   drops its answer if `ticks` changed meanwhile. Counters must be declared before the startup
   `if (password) load()` (a TDZ error broke saved logins once).
-- Live deployment: `shops/davids-paninis/shop.json` `apiUrl` = deployment "davids panninis test"
-  (there's also an unused "Shop v1" deployment). After changing Code.gs: paste into the Apps Script
-  editor, then Deploy → Manage deployments → "davids panninis test" → pencil → New version.
+- Live deployment: David's `apiUrl` = the **active** deployment "Untitled" (`AKfycbxvJTUNcf…`; "davids
+  panninis test" is archived, "Shop v1" unused). Eli's = his one active deployment. After changing Code.gs:
+  update the code in each script, then Deploy → Manage deployments → pencil → Version: **New version** → Deploy.
+  Agent route (2026-10-15): the Apps Script editor exposes `monaco`; load the committed file from
+  `raw.githubusercontent.com/MikdashMunchies/mikdashmunchies.github.io/<commit>/apps-script/Code.gs`, put it in
+  with `editor.executeEdits`, compare a SHA-256 of the editor text with the committed file, click Save. Before
+  replacing, hash the live text against `git log -- apps-script/Code.gs` versions to prove nobody hand-edited it.
+  The **Deploy click itself is Ethan's**: Claude Code's auto mode blocks it as a production deploy.
 - On phones, `.ticket-paper` must not have a `filter` or `transform`: either one makes the
   `position: fixed` checkout bar stick to the ticket instead of the screen.
 - `.layout`/`.tiles` set `display`, so `[hidden] { display:none !important }` is needed for views to hide.
