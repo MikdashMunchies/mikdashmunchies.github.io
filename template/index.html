@@ -22,13 +22,14 @@
           <span class="shop-name">{{name}}</span>
         </h1>
         <p class="tagline">{{tagline}}</p>
+        <p class="hours-today" id="hours-today" hidden></p>
         <a class="btn btn-primary btn-big" href="#order">Build your {{item}}</a>
       </div>
 
       <figure class="hero-art">
         <span class="sticker sticker-hot">{{sticker}}</span>
         <span class="sticker sticker-price" id="from-price" hidden></span>
-        <span class="sticker sticker-soldout" aria-hidden="true">Sold<br>out</span>
+        <span class="sticker sticker-soldout" id="closed-sticker" aria-hidden="true">Sold<br>out</span>
         <img class="hero-img" src="{{image}}" alt="{{imageAlt}}">
       </figure>
     </div>
@@ -38,7 +39,7 @@
 
   <section id="closed" class="panel panel-closed" hidden aria-labelledby="closed-title">
     <h2 id="closed-title">Sold out!</h2>
-    <p>We're not taking any more orders right now. Check back soon.</p>
+    <p id="closed-text">We're not taking any more orders right now. Check back soon.</p>
   </section>
 
   <main id="order" class="layout">

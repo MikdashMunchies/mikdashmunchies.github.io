@@ -7,6 +7,8 @@ const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
 const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price'];
 const MAX_MENU_ITEMS = 60;
+// Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00".
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'menu') return json_(publicMenu_());
@@ -19,7 +21,7 @@ function doPost(e) {
     if (body.action === 'order') return json_(placeOrder_(body));
     if (body.action === 'list') {
       checkPassword_(body.password);
-      return json_({ orders: listOrders_(), open: getMenu_().shop.open });
+      return json_({ orders: listOrders_(), ...status_(getMenu_().shop) });
     }
     if (body.action === 'update') {
       checkPassword_(body.password);
@@ -28,6 +30,10 @@ function doPost(e) {
     if (body.action === 'setOpen') {
       checkPassword_(body.password);
       return json_(setOpen_(body.open === true));
+    }
+    if (body.action === 'setHours') {
+      checkPassword_(body.password);
+      return json_(setHours_(body.hours));
     }
     if (body.action === 'saveMenu') {
       checkPassword_(body.password);
@@ -92,8 +98,23 @@ function getMenu_() {
   rows_(ss.getSheetByName('Settings')).forEach(([key, value]) => {
     if (key) menu.shop[String(key).trim()] = String(value).trim();
   });
-  // Open unless the sheet says no (also covers an unticked checkbox, which reads as "false").
-  menu.shop.open = !/^(no|false|closed)$/i.test(menu.shop.open || '');
+  // The Close/Open button: open unless the sheet says no (also covers an unticked checkbox, which reads as "false").
+  const switchOpen = !/^(no|false|closed)$/i.test(menu.shop.open || '');
+  // No hours rows at all = no hours: open whenever the switch is (how every shop worked before hours).
+  const hasHours = DAYS.some(d => menu.shop['hours' + d] !== undefined);
+  const hours = hasHours ? DAYS.map(d => menu.shop['hours' + d] || '') : null;
+  // The Sheet's own time zone (File > Settings), so a buyer's phone clock can't change it.
+  // 'u' = day of the week, 1 = Monday ... 7 = Sunday.
+  const [u, hm] = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'u HH:mm').split(' ');
+  const now = hoursNow_(hours, Number(u) % 7, toMinutes_(hm));
+  Object.assign(menu.shop, {
+    open: switchOpen && now.open, // what decides if an order goes through
+    switchOpen,
+    closedBy: !switchOpen ? 'switch' : !now.open ? 'hours' : null,
+    hours,
+    today: Number(u) % 7,
+    nextOpen: now.next,
+  });
   // Delivery costs a flat fee per order (default $1); pickup is free.
   const fee = Number(menu.shop.deliveryFee);
   menu.shop.deliveryFee = menu.shop.deliveryFee !== undefined && menu.shop.deliveryFee !== '' && fee >= 0 ? fee : 1;
@@ -105,7 +126,51 @@ function getMenu_() {
 function publicMenu_() {
   const menu = getMenu_();
   const { zelleTo, open, deliveryFee } = menu.shop;
-  return { ...menu, shop: { zelleTo, open, deliveryFee } };
+  return { ...menu, shop: { zelleTo, deliveryFee, ...status_(menu.shop), open } }; // open last: can order now
+}
+
+// Open/closed details for the shop page and the admin page. `open` here is the Close/Open
+// button; publicMenu_ keeps `open` = "can order right now".
+function status_(shop) {
+  const { switchOpen, closedBy, hours, today, nextOpen } = shop;
+  return { open: switchOpen, closedBy, hours, today, nextOpen };
+}
+
+// "13:30" -> 810 minutes after midnight, or null if it isn't a time from 00:00 to 23:59.
+function toMinutes_(t) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(t).trim());
+  return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+// One day's hours, "11:00-00:00" -> { from: 660, to: 1440 }. Closing at 00:00 means midnight; closing
+// before opening (18:00-01:00) runs past midnight. Blank, "closed" or anything unreadable = closed.
+function dayHours_(text) {
+  const parts = String(text || '').split('-');
+  if (parts.length !== 2) return null;
+  const from = toMinutes_(parts[0]);
+  let to = toMinutes_(parts[1]);
+  if (from === null || to === null) return null;
+  if (to === 0) to = 1440; // 00:00-00:00 = open all day (any other 00:00 close works either way)
+  if (to === from) return null;
+  return { from, to: to < from ? to + 1440 : to };
+}
+
+// Is the shop inside its hours at `day` (0 = Sunday) and `minute` (after midnight), and when does it
+// open next ({ day, inDays, time: "11:00" }, or null if it never does)? No hours = always open.
+function hoursNow_(hours, day, minute) {
+  if (!hours) return { open: true, next: null };
+  const at = d => dayHours_(hours[(d + 7) % 7]);
+  const today = at(day);
+  const yesterday = at(day - 1);
+  const open = !!(today && minute >= today.from && minute < today.to) || !!(yesterday && minute + 1440 < yesterday.to);
+  let next = null;
+  for (let i = 0; i < 8 && !next; i++) {
+    const h = at(day + i);
+    if (h && (i > 0 || h.from > minute)) {
+      next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
+    }
+  }
+  return { open, next };
 }
 
 // Works out the real price from the Menu tab. Anything the browser says about price is ignored.
@@ -138,7 +203,10 @@ function pickItems_(list, names) {
 
 function placeOrder_(body) {
   const menu = getMenu_();
-  if (!menu.shop.open) throw new Error("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
+  if (!menu.shop.open) {
+    throw new Error((menu.shop.closedBy === 'hours' ? 'Sorry, we just closed' : 'Sorry, we just sold out') +
+      ", so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
+  }
   const order = priceOrder_(menu, body);
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -284,13 +352,31 @@ function updateOrder_(id, body) {
 }
 
 function setOpen_(open) {
+  setSetting_('open', open ? 'yes' : 'no');
+  return { ok: true, ...status_(getMenu_().shop) };
+}
+
+// The admin page's Hours tab sends 7 days, Sunday first: "" (closed) or "11:00-00:00".
+// All 7 are checked before anything is written.
+function setHours_(hours) {
+  if (!Array.isArray(hours) || hours.length !== 7) throw new Error('Send hours for all 7 days.');
+  const values = hours.map((h, i) => {
+    const text = String(h == null ? '' : h).trim();
+    if (text === '' || text.toLowerCase() === 'closed') return 'closed';
+    if (!dayHours_(text)) throw new Error(DAYS[i] + ': pick an opening and a closing time that are different.');
+    return text;
+  });
+  values.forEach((v, i) => setSetting_('hours' + DAYS[i], v));
+  return { ok: true, ...status_(getMenu_().shop) };
+}
+
+// Changes one Settings row, or adds it. Stored as text, so Sheets can't turn "11:00-00:00" into a time.
+function setSetting_(key, value) {
   const sheet = SpreadsheetApp.getActive().getSheetByName('Settings');
   const rows = sheet.getDataRange().getValues();
-  const value = open ? 'yes' : 'no';
-  const i = rows.findIndex((r, n) => n > 0 && String(r[0]).trim() === 'open');
-  if (i > 0) sheet.getRange(i + 1, 2).setValue(value);
-  else sheet.appendRow(['open', value]);
-  return { ok: true, open };
+  const i = rows.findIndex((r, n) => n > 0 && String(r[0]).trim() === key);
+  if (i > 0) sheet.getRange(i + 1, 2).setValue(safeCell_(value));
+  else sheet.appendRow([key, safeCell_(value)]);
 }
 
 // The admin page's Menu tab sends the whole menu; it replaces the Menu tab. Everything is checked

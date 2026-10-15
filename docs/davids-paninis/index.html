@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=c21124c828">
+  <link rel="stylesheet" href="../assets/style.css?v=75865d0a05">
   <style>:root { --accent: #D2341B; --highlight: #FFC233; }</style>
 </head>
 <body class="shop">
@@ -22,13 +22,14 @@
           <span class="shop-name">David&#39;s Meat Paninis</span>
         </h1>
         <p class="tagline">Pressed hot and made to order.</p>
+        <p class="hours-today" id="hours-today" hidden></p>
         <a class="btn btn-primary btn-big" href="#order">Build your panini</a>
       </div>
 
       <figure class="hero-art">
         <span class="sticker sticker-hot">Hot &amp; pressed</span>
         <span class="sticker sticker-price" id="from-price" hidden></span>
-        <span class="sticker sticker-soldout" aria-hidden="true">Sold<br>out</span>
+        <span class="sticker sticker-soldout" id="closed-sticker" aria-hidden="true">Sold<br>out</span>
         <img class="hero-img" src="panini.svg" alt="A hot pressed meat panini cut in half, cheese melting out">
       </figure>
     </div>
@@ -38,7 +39,7 @@
 
   <section id="closed" class="panel panel-closed" hidden aria-labelledby="closed-title">
     <h2 id="closed-title">Sold out!</h2>
-    <p>We're not taking any more orders right now. Check back soon.</p>
+    <p id="closed-text">We're not taking any more orders right now. Check back soon.</p>
   </section>
 
   <main id="order" class="layout">
@@ -137,7 +138,7 @@
   </section>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=ff19ed4e2d"></script>
-  <script src="../assets/shop.js?v=eebb1f1da7"></script>
+  <script src="../assets/api.js?v=f37038a0ea"></script>
+  <script src="../assets/shop.js?v=8c0f7f3e18"></script>
 </body>
 </html>
