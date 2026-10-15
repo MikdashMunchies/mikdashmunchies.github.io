@@ -104,7 +104,8 @@ It prints `OK: scans to the right link` only after reading the code back. Print 
 
 1. Place an order on your phone. Check a row shows up in the Sheet's **Orders** tab.
 2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too,
-   and the **Maaser** box should go up by 10% of that order.
+   and the **Maaser** box should go up by 10% of that order. Tick **Done**: the row fades and is
+   crossed out. Open **Analytics**: the order shows in the counts.
    The seller's phone should have buzzed with the order (if `ntfyTopic` is set).
 3. Tap **Close shop**: the shop page should say **Sold out!** Then **Open shop** again.
 

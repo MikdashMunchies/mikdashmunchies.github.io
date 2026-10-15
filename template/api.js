@@ -25,6 +25,34 @@ function maaserOf(orders, now = new Date()) {
   return { month: sum(paid.filter(thisMonth)), all: sum(paid) };
 }
 
+// Numbers for the admin Analytics tab, from the same order list the table shows.
+// Hours and days are the viewer's local time. Best sellers count mains only (extras are add-ons).
+function analyticsOf(orders, now = new Date()) {
+  const cents = n => Math.round(Number(n) * 100);
+  const when = o => new Date(o.time);
+  const byHour = Array(24).fill(0);
+  const sold = {};
+  orders.forEach(o => {
+    const d = when(o);
+    if (!isNaN(d)) byHour[d.getHours()]++;
+    String(o.item || '').split(' + ').filter(Boolean).forEach(name => { sold[name] = (sold[name] || 0) + Number(o.qty || 1); });
+  });
+  const peak = Math.max(...byHour);
+  const allCents = orders.reduce((s, o) => s + cents(o.total), 0);
+  return {
+    orders: orders.length,
+    sales: orders.filter(o => o.zelled).reduce((s, o) => s + cents(o.total), 0) / 100,
+    average: orders.length ? Math.round(allCents / orders.length) / 100 : 0,
+    unpaid: orders.filter(o => !o.zelled).length,
+    today: orders.filter(o => when(o).toDateString() === now.toDateString()).length,
+    week: orders.filter(o => now - when(o) < 7 * 864e5).length,
+    byHour,
+    busiestHour: peak ? byHour.indexOf(peak) : null,
+    best: Object.entries(sold).map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, 5),
+  };
+}
+
 async function api(action, data = {}) {
   if (DEMO) return demoApi(action, data);
   let out;
@@ -104,7 +132,9 @@ function demoApi(action, data) {
   if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
   if (action === 'update') {
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders));
-    demoOrders.find(o => o.id === data.id).zelled = data.zelled === true;
+    const o = demoOrders.find(x => x.id === data.id);
+    if (typeof data.zelled === 'boolean') o.zelled = data.zelled;
+    if (typeof data.completed === 'boolean') o.completed = data.completed;
     demoSave();
     return wait({ ok: true });
   }
