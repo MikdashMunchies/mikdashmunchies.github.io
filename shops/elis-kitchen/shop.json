@@ -10,7 +10,7 @@
   "imageAlt": "A bowl of pasta next to a slice of pepperoni pizza",
   "accent": "#2B7A3D",
   "highlight": "#F9C74F",
-  "apiUrl": "",
+  "apiUrl": "https://script.google.com/macros/s/AKfycbyOIN6S4Qchbj_cLcVKHF1pf0cGsJ8Ik-BbikLMq-taJXERltXlaG-Hk8CbozJWYyll/exec",
   "demoMenu": {
     "zelleTo": "(555) 123-4567",
     "deliveryFee": 1,
