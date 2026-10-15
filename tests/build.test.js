@@ -88,6 +88,17 @@ test('README.md lists every shop (run `node build.js` if this fails)', () => {
   }
 });
 
+test('the sellers page (features + pricing) is built as a full page and linked from the README', () => {
+  const out = tempBuild();
+  const html = read(out, 'sellers', 'index.html');
+  assert.match(html, /^<!doctype html>/i);
+  assert.match(html, /<title>MikdashMunchies for Sellers<\/title>/);
+  assert.ok(html.indexOf('</head>') < html.indexOf('<main'), 'styles in the head, content in the body');
+  assert.match(html, /<\/main>\s*<\/body>\s*<\/html>\s*$/);
+  const { readme } = require('../build.js');
+  assert.ok(readme().includes('https://mikdashmunchies.github.io/sellers/'));
+});
+
 // Windows git can leave source files with CRLF on disk; the built site must be LF either way,
 // or docs/ "changes" depending on which machine built it.
 test('built files always use plain LF line endings', () => {

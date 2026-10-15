@@ -50,8 +50,9 @@
 - **Two Claude sessions worked on this repo on 2026-10-15** (this one: notifications → cash; another: opening
   hours, in worktree `SchoolFoodSites-hours`). Both deployed to the live scripts. Before deploying `Code.gs`, check
   the active version in Manage deployments and that the editor holds the latest `main` (hash it).
-- **Features page for prospective sellers:** https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw (source
-  `features/index.html`; private until Ethan shares it). Republish it when features or prices change.
+- **Sellers page (features + pricing):** public at https://mikdashmunchies.github.io/sellers/ (built by
+  `node build.js` from `features/index.html`, linked from the README) and as a private Claude artifact
+  https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw. After editing the file: `node build.js` + republish the artifact.
 - **Client feature list (2026-10-15)** — done: menu, free editing (admin Menu tab), order form, notifications,
   maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash. **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), pictures +

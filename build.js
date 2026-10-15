@@ -78,7 +78,31 @@ function build(out = path.join(ROOT, 'docs')) {
   // The MikdashMunchies home page lists every shop.
   const home = lf(fs.readFileSync(path.join(TEMPLATE, 'home.html'), 'utf8'));
   fs.writeFileSync(path.join(out, 'index.html'), stamp(home.replace('<!-- SHOPS -->', shops.map(homeCard).join('\n'))));
+  // The sellers page (features + pricing). features/index.html is also published as a Claude artifact,
+  // which adds the <html>/<head>/<body> itself; GitHub Pages needs them in the file.
+  fs.mkdirSync(path.join(out, 'sellers'));
+  fs.writeFileSync(path.join(out, 'sellers', 'index.html'), sellersPage());
   return shops.map(s => s.slug);
+}
+
+function sellersPage() {
+  const src = lf(fs.readFileSync(path.join(ROOT, 'features', 'index.html'), 'utf8'));
+  const body = src.indexOf('<main');
+  return [
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<style>body { margin: 0; }</style>',
+    src.slice(0, body).trim(),
+    '</head>',
+    '<body>',
+    src.slice(body).trim(),
+    '</body>',
+    '</html>',
+    '',
+  ].join('\n');
 }
 
 // README.md (the repo's front page on GitHub) is generated too, so the link list never goes stale.
@@ -87,9 +111,11 @@ function readme() {
   return [
     '# MikdashMunchies',
     '',
-    'Food-ordering websites for student sellers: delivery or pickup, pay with Zelle.',
+    'Food-ordering websites for student sellers: delivery or pickup, pay with Zelle or cash.',
     '',
     `**Home page (all shops):** ${SITE}/`,
+    '',
+    `**MikdashMunchies for Sellers** (features, how to start, pricing — send this to new sellers): ${SITE}/sellers/`,
     '',
     '| Shop | Order link | Admin page (code 1234) | QR code |',
     '|---|---|---|---|',

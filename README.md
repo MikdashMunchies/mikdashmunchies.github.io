@@ -1,8 +1,10 @@
 # MikdashMunchies
 
-Food-ordering websites for student sellers: delivery or pickup, pay with Zelle.
+Food-ordering websites for student sellers: delivery or pickup, pay with Zelle or cash.
 
 **Home page (all shops):** https://mikdashmunchies.github.io/
+
+**MikdashMunchies for Sellers** (features, how to start, pricing — send this to new sellers): https://mikdashmunchies.github.io/sellers/
 
 | Shop | Order link | Admin page (code 1234) | QR code |
 |---|---|---|---|
