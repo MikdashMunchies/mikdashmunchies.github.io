@@ -2,9 +2,11 @@
 // Deploy as a web app: Execute as "Me", access "Anyone". See SETUP.md.
 
 const MAX_QTY = 10;
-const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', 'Completed'];
+// Column 10 is the Paid tick (called Zelled before cash existed; older Sheets keep that header).
+const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Paid', 'Completed', 'Payment'];
 const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
+const PAYMENT_COL = 12;
 const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price', 'Sold out'];
 const MAX_MENU_ITEMS = 60;
 // Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00".
@@ -30,6 +32,11 @@ function doPost(e) {
     if (body.action === 'setOpen') {
       checkPassword_(body.password);
       return json_(setOpen_(body.open === true));
+    }
+    if (body.action === 'setCash') {
+      checkPassword_(body.password);
+      setSetting_('cash', body.cash === true ? 'yes' : 'no');
+      return json_({ ok: true, ...status_(getMenu_().shop) });
     }
     if (body.action === 'setHours') {
       checkPassword_(body.password);
@@ -69,6 +76,8 @@ function setup() {
     ['zelleTo', "CHANGE ME: the seller's Zelle phone or email"],
     ['open', 'yes'],
     ['deliveryFee', 1],
+    // Buyers may choose to pay cash when they get their food (yes/no). The admin page has a switch.
+    ['cash', 'yes'],
     // Who gets a Telegram message per order: chat ids, comma-separated. Find them with telegramChats().
     ['telegramChatId', ''],
     // Who gets an email per order: addresses, comma-separated (optional).
@@ -117,6 +126,8 @@ function getMenu_() {
     today: Number(u) % 7,
     nextOpen: now.next,
   });
+  // Cash on delivery/pickup: allowed unless the sheet says no (missing row = allowed).
+  menu.shop.cash = !/^(no|false|off)$/i.test(menu.shop.cash || '');
   // Delivery costs a flat fee per order (default $1); pickup is free.
   const fee = Number(menu.shop.deliveryFee);
   menu.shop.deliveryFee = menu.shop.deliveryFee !== undefined && menu.shop.deliveryFee !== '' && fee >= 0 ? fee : 1;
@@ -134,8 +145,8 @@ function publicMenu_() {
 // Open/closed details for the shop page and the admin page. `open` here is the Close/Open
 // button; publicMenu_ keeps `open` = "can order right now".
 function status_(shop) {
-  const { switchOpen, closedBy, hours, today, nextOpen } = shop;
-  return { open: switchOpen, closedBy, hours, today, nextOpen };
+  const { switchOpen, closedBy, hours, today, nextOpen, cash } = shop;
+  return { open: switchOpen, closedBy, hours, today, nextOpen, cash };
 }
 
 // "13:30" -> 810 minutes after midnight, or null if it isn't a time from 00:00 to 23:59.
@@ -181,6 +192,8 @@ function priceOrder_(menu, o) {
   const delivery = o.delivery === true;
   const room = delivery ? clean_(o.room, 20) : 'Pickup';
   const note = clean_(o.note, 200);
+  const cash = o.payment === 'cash'; // anything else is Zelle, as before cash existed
+  if (cash && !menu.shop.cash) throw new Error("This shop isn't taking cash right now. Please pay with Zelle.");
   if (!name) throw new Error('Please enter your name.');
   if (!room) throw new Error('Please enter your room number for delivery.');
   // Mains can be combined (turkey + pastrami in one); their prices add up.
@@ -192,7 +205,7 @@ function priceOrder_(menu, o) {
   // Cents, so 0.1 + 0.2 style rounding never shows up on a bill.
   const unit = [...mains, ...extras].reduce((sum, x) => sum + cents_(x.price), 0);
   const fee = delivery ? cents_(menu.shop.deliveryFee) : 0; // once per order, not per item
-  return { name, room, note, mains: mains.map(m => m.name), extras: extras.map(x => x.name), qty, total: (unit * qty + fee) / 100 };
+  return { name, room, note, cash, mains: mains.map(m => m.name), extras: extras.map(x => x.name), qty, total: (unit * qty + fee) / 100 };
 }
 
 function pickItems_(list, names) {
@@ -221,9 +234,9 @@ function placeOrder_(body) {
     const sheet = ordersSheet_();
     sheet.appendRow([
       id, new Date(), order.name, order.room, order.mains.join(' + '), order.extras.join(', '),
-      order.qty, order.total, order.note, false, false,
+      order.qty, order.total, order.note, false, false, order.cash ? 'Cash' : 'Zelle',
     ].map(safeCell_));
-    // Real checkboxes, so the seller can also tick "Zelled"/"Completed" right in the Sheet.
+    // Real checkboxes, so the seller can also tick "Paid"/"Completed" right in the Sheet.
     // Added per row: pre-filling empty rows with checkboxes would make appendRow skip past them.
     sheet.getRange(sheet.getLastRow(), ZELLED_COL).insertCheckboxes();
     sheet.getRange(sheet.getLastRow(), COMPLETED_COL).insertCheckboxes();
@@ -246,7 +259,7 @@ function notify_(shop, id, order) {
   const title = 'New order #' + id + ' · ' + order.name;
   const lines = [
     order.qty + ' × ' + order.mains.join(' + ') + (order.extras.length ? ' + ' + order.extras.join(', ') : ''),
-    (order.room === 'Pickup' ? 'Pickup' : 'Room ' + order.room) + ' · $' + order.total.toFixed(2),
+    (order.room === 'Pickup' ? 'Pickup' : 'Room ' + order.room) + ' · $' + order.total.toFixed(2) + ' · ' + (order.cash ? 'Cash' : 'Zelle'),
   ];
   if (order.note) lines.push('“' + order.note + '”');
   const list = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -322,6 +335,7 @@ function listOrders_() {
     name: r[2], room: r[3], item: r[4], extras: r[5], qty: r[6], total: r[7], note: r[8],
     zelled: ticked_(r[9]),
     completed: ticked_(r[10]), // blank on rows from before the Completed column existed
+    payment: /^cash$/i.test(String(r[11] || '').trim()) ? 'cash' : 'zelle', // blank on rows from before cash
   })).reverse();
 }
 
@@ -330,11 +344,13 @@ function ticked_(v) {
   return v === true || String(v).toUpperCase() === 'TRUE';
 }
 
-// Shops set up before the Completed column existed get its header on first use.
+// Shops set up before the Completed and Payment columns existed get their headers on first use.
 function ordersSheet_() {
   const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
-  const header = sheet.getRange(1, COMPLETED_COL);
-  if (header.getValue() !== 'Completed') header.setValue('Completed');
+  [[COMPLETED_COL, 'Completed'], [PAYMENT_COL, 'Payment']].forEach(([col, title]) => {
+    const header = sheet.getRange(1, col);
+    if (header.getValue() !== title) header.setValue(title);
+  });
   return sheet;
 }
 

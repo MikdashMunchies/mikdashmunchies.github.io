@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=41287c7dd8">
+  <link rel="stylesheet" href="../assets/style.css?v=29cbf2517f">
   <style>:root { --accent: #D2341B; --highlight: #FFC233; }</style>
 </head>
 <body>
@@ -43,6 +43,10 @@
         </div>
         <button type="button" class="btn" id="toggle-open">Close shop</button>
       </div>
+      <div class="cash-status" id="cash-status">
+        <p><span class="shop-status-label">Cash</span> <strong id="cash-state">Accepted</strong></p>
+        <button type="button" class="btn" id="toggle-cash">Turn off cash</button>
+      </div>
       <div class="tabs" role="tablist" aria-label="Admin views">
         <button type="button" role="tab" id="tab-orders" aria-controls="panel-orders" aria-selected="true">Orders</button>
         <button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" tabindex="-1">Menu</button>
@@ -52,7 +56,7 @@
       <p id="board-error" class="error" role="alert"></p>
       <div role="tabpanel" id="panel-orders" aria-labelledby="tab-orders">
         <section class="maaser" aria-labelledby="maaser-title">
-          <h2 class="shop-status-label" id="maaser-title">Maaser · 10% of Zelled sales</h2>
+          <h2 class="shop-status-label" id="maaser-title">Maaser · 10% of paid sales</h2>
           <dl class="maaser-grid">
             <div>
               <dt>This month</dt>
@@ -69,7 +73,7 @@
         <div class="sheet-wrap">
           <table class="sheet">
             <thead>
-              <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Zelled</th><th scope="col" class="col-check">Done</th></tr>
+              <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Paid</th><th scope="col" class="col-check">Done</th></tr>
             </thead>
             <tbody id="orders"></tbody>
           </table>
@@ -103,9 +107,9 @@
       <div role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
         <dl class="stat-tiles">
           <div class="stat"><dt>Orders</dt><dd id="stat-orders">0</dd></div>
-          <div class="stat"><dt>Sales (Zelled)</dt><dd id="stat-sales">$0.00</dd></div>
+          <div class="stat"><dt>Sales (paid)</dt><dd id="stat-sales">$0.00</dd></div>
           <div class="stat"><dt>Average order</dt><dd id="stat-average">$0.00</dd></div>
-          <div class="stat"><dt>Waiting for Zelle</dt><dd id="stat-unpaid">0</dd></div>
+          <div class="stat"><dt>Waiting for payment</dt><dd id="stat-unpaid">0</dd></div>
           <div class="stat"><dt>Today</dt><dd id="stat-today">0</dd></div>
           <div class="stat"><dt>Last 7 days</dt><dd id="stat-week">0</dd></div>
         </dl>
@@ -123,7 +127,7 @@
   </main>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=8673f5585e"></script>
-  <script src="../assets/admin.js?v=5e5d78fff9"></script>
+  <script src="../assets/api.js?v=8647807a3b"></script>
+  <script src="../assets/admin.js?v=f32cc3ed0f"></script>
 </body>
 </html>

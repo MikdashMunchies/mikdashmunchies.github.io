@@ -40,7 +40,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ menuRows, open, hours, clock = '3 12:00', deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
+function load({ menuRows, open, cash, hours, clock = '3 12:00', deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
   const sheets = {
     Menu: fakeSheet(menuRows || [
       ['Type', 'Name', 'Price'],
@@ -55,6 +55,7 @@ function load({ menuRows, open, hours, clock = '3 12:00', deliveryFee, chatIds, 
       ...(open === undefined ? [] : [['open', open]]),
       ...Object.entries(hours || {}).map(([day, v]) => ['hours' + day, v]),
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
+      ...(cash === undefined ? [] : [['cash', cash]]),
       ...(chatIds === undefined ? [] : [['telegramChatId', chatIds]]),
       ...(emails === undefined ? [] : [['notifyEmail', emails]]),
     ]),
@@ -108,7 +109,7 @@ test('order is priced by the server, ignoring a tampered total', () => {
   const r = post({ ...good, total: 0.01 });
   assert.deepStrictEqual(r, { id: 1, total: 21 }); // (7.5 + 0.5 + 2) * 2, + $1 delivery once
   const row = sheets.Orders.rows[1];
-  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 21, '', false, false]);
+  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 21, '', false, false, 'Zelle']);
 });
 
 test('several mains go in one item and their prices add up', () => {
@@ -159,7 +160,7 @@ test('bad orders are rejected and not saved', () => {
 test('typed text is stored as plain text: no formulas, no number or date guessing', () => {
   const { post, sheets } = load();
   post({ ...good, name: '=HYPERLINK("http://x")', room: '012', note: '3-12' });
-  const sent = sheets.Orders.raw[0];
+  const sent = sheets.Orders.raw[sheets.Orders.raw.length - 1]; // the order row (a header fix-up may come first)
   assert.strictEqual(sent[2], '\'=HYPERLINK("http://x")'); // would run as a formula
   assert.strictEqual(sent[3], "'012"); // would become the number 12
   assert.strictEqual(sent[8], "'3-12"); // would become a date
@@ -234,13 +235,13 @@ test('a new order sends a Telegram message to every chat listed for the shop', (
   post({ ...good, note: 'no mustard' });
   assert.deepStrictEqual(sent.map(m => m.body.chat_id), ['111', '222']);
   assert.strictEqual(sent[0].url, 'https://api.telegram.org/botTOKEN123/sendMessage');
-  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
+  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00 · Zelle\n“no mustard”');
 });
 
 test('pickup orders say Pickup in the message', () => {
   const { post, sent } = load({ chatIds: '111' });
   post({ ...good, delivery: false, extras: [], qty: 1 });
-  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n1 × Pastrami\nPickup · $7.50');
+  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n1 × Pastrami\nPickup · $7.50 · Zelle');
 });
 
 test('no chat id or no bot token: no message, order still saved', () => {
@@ -286,7 +287,7 @@ test('ticking Zelled leaves Completed alone', () => {
   post(good);
   post({ action: 'update', password: 'secret-pass', id: 1, completed: true });
   post({ action: 'update', password: 'secret-pass', id: 1, zelled: true });
-  assert.deepStrictEqual(sheets.Orders.rows[1].slice(9), [true, true]);
+  assert.deepStrictEqual(sheets.Orders.rows[1].slice(9, 11), [true, true]);
 });
 
 test('an update with nothing to change is refused', () => {
@@ -328,7 +329,7 @@ test('telegramChats lists who pressed Start, once each', () => {
 test('the public menu never shows the Telegram chat ids (or any other private setting)', () => {
   const { get, post } = load({ chatIds: 'secret-topic' });
   const m = get('menu');
-  assert.deepStrictEqual(Object.keys(m.shop).sort(), ['closedBy', 'deliveryFee', 'hours', 'nextOpen', 'open', 'today', 'zelleTo']);
+  assert.deepStrictEqual(Object.keys(m.shop).sort(), ['cash', 'closedBy', 'deliveryFee', 'hours', 'nextOpen', 'open', 'today', 'zelleTo']);
   assert.ok(!JSON.stringify(m).includes('secret-topic'));
   assert.ok(!JSON.stringify(post({ action: 'list', password: 'secret-pass' })).includes('secret-topic'));
 });
@@ -339,7 +340,7 @@ test('a new order emails every address in notifyEmail, in one email', () => {
   assert.strictEqual(mails.length, 1);
   assert.strictEqual(mails[0].to, 'eli@example.com,ethan@example.com');
   assert.strictEqual(mails[0].subject, 'New order #1 · Avi');
-  assert.strictEqual(mails[0].body, '2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
+  assert.strictEqual(mails[0].body, '2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00 · Zelle\n“no mustard”');
 });
 
 test('email and Telegram both go out when both are set; neither set sends nothing', () => {
@@ -579,4 +580,41 @@ test('admin marks items sold out (and back) with saveMenu', () => {
   assert.deepStrictEqual(get('menu').mains.map(x => !!x.soldOut), [true, false]);
   post({ action: 'saveMenu', password: PW, items: [{ type: 'main', name: 'Turkey', price: 6, sale: '', soldOut: false }] });
   assert.strictEqual(get('menu').mains[0].soldOut, undefined);
+});
+
+test('cash is on by default; a cash order is saved as Cash and says so in the message', () => {
+  const { get, post, sheets, sent } = load({ chatIds: '111' });
+  assert.strictEqual(get('menu').shop.cash, true);
+  assert.deepStrictEqual(post({ ...good, payment: 'cash' }), { id: 1, total: 21 });
+  assert.strictEqual(sheets.Orders.rows[1][11], 'Cash');
+  assert.match(sent[0].body.text, /Room 204 · \$21\.00 · Cash/);
+  const o = post({ action: 'list', password: PW }).orders[0];
+  assert.deepStrictEqual([o.payment, o.zelled], ['cash', false]); // not paid until the seller ticks it
+});
+
+test('anything but "cash" is a Zelle order; old rows with no Payment read as Zelle', () => {
+  const { post, sheets } = load({ oldOrdersTab: true });
+  sheets.Orders.rows.push([9, new Date(), 'Old', '1', 'Turkey', '', 1, 7, '', true]);
+  post({ ...good, payment: 'bitcoin' });
+  assert.strictEqual(sheets.Orders.rows[2][11], 'Zelle');
+  assert.strictEqual(sheets.Orders.rows[0][11], 'Payment'); // header added on an older Orders tab
+  assert.deepStrictEqual(post({ action: 'list', password: PW }).orders.map(o => o.payment), ['zelle', 'zelle']);
+});
+
+test('with cash switched off, cash orders are refused and nothing is saved', () => {
+  const { get, post, sheets } = load({ cash: 'no' });
+  assert.strictEqual(get('menu').shop.cash, false);
+  assert.match(post({ ...good, payment: 'cash' }).error, /cash/i);
+  assert.strictEqual(sheets.Orders.rows.length, 1);
+  assert.strictEqual(post(good).id, 1); // Zelle still works
+});
+
+test('admin turns cash off and on, with the password only', () => {
+  const { get, post, sheets } = load();
+  assert.ok(post({ action: 'setCash', password: 'nope', cash: false }).error);
+  assert.strictEqual(post({ action: 'setCash', password: PW, cash: false }).cash, false);
+  assert.strictEqual(get('menu').shop.cash, false);
+  assert.strictEqual(post({ action: 'list', password: PW }).cash, false);
+  assert.strictEqual(post({ action: 'setCash', password: PW, cash: true }).cash, true);
+  assert.strictEqual(sheets.Settings.rows.filter(r => r[0] === 'cash').length, 1);
 });

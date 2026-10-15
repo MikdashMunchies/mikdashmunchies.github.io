@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=41287c7dd8">
+  <link rel="stylesheet" href="../assets/style.css?v=29cbf2517f">
   <style>:root { --accent: #D2341B; --highlight: #FFC233; }</style>
 </head>
 <body class="shop">
@@ -77,6 +77,14 @@
         </div>
       </fieldset>
 
+      <fieldset class="step" id="pay-step" hidden>
+        <legend><span class="step-num"></span>How will you pay?</legend>
+        <div class="tiles">
+          <label class="tile"><input type="radio" name="payment" value="zelle" checked><span class="opt-name">Zelle</span><span class="opt-price">Pay now</span></label>
+          <label class="tile"><input type="radio" name="payment" value="cash"><span class="opt-name">Cash</span><span class="opt-price">Pay when you get it</span></label>
+        </div>
+      </fieldset>
+
       <fieldset class="step">
         <legend><span class="step-num"></span>Your details</legend>
         <div class="field">
@@ -133,12 +141,12 @@
     <p class="order-num mono">Order #<span id="done-id"></span></p>
     <div class="done-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></svg></div>
     <h2 id="done-title">Order completed</h2>
-    <p>You're on the list. As soon as your <strong id="done-total" class="mono"></strong> Zelle shows up, your panini <span id="done-where"></span>.</p>
+    <p id="done-text"></p>
     <button type="button" class="btn btn-primary btn-wide" id="again">Order another</button>
   </section>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=8673f5585e"></script>
-  <script src="../assets/shop.js?v=f38e05f22c"></script>
+  <script src="../assets/api.js?v=8647807a3b"></script>
+  <script src="../assets/shop.js?v=6532126f72"></script>
 </body>
 </html>

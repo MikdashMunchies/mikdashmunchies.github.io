@@ -122,6 +122,17 @@ function demoOpen(value) {
   }
 }
 
+// The demo admin page's "Accept cash" switch, kept like demoOpen. On unless switched off.
+function demoCash(value) {
+  const key = 'demoCash:' + SHOP.slug;
+  try {
+    if (value !== undefined) localStorage.setItem(key, value ? 'yes' : 'no');
+    return localStorage.getItem(key) !== 'no';
+  } catch (err) {
+    return true;
+  }
+}
+
 function demoLoad() {
   try {
     return JSON.parse(localStorage.getItem(DEMO_KEY));
@@ -200,7 +211,7 @@ function demoStatus(now = new Date()) {
       if (h && (i > 0 || h.from > minute)) next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
     }
   }
-  return { open: switchOpen, closedBy: !switchOpen ? 'switch' : !inHours ? 'hours' : null, hours, today: day, nextOpen: next };
+  return { open: switchOpen, closedBy: !switchOpen ? 'switch' : !inHours ? 'hours' : null, hours, today: day, nextOpen: next, cash: demoCash() };
 }
 
 function demoApi(action, data) {
@@ -213,15 +224,20 @@ function demoApi(action, data) {
   if (action === 'order') {
     const closedBy = demoStatus().closedBy;
     if (closedBy) return fail((closedBy === 'hours' ? 'Sorry, we just closed' : 'Sorry, we just sold out') + ", so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
+    if (data.payment === 'cash' && !demoCash()) return fail("This shop isn't taking cash right now. Please pay with Zelle.");
     const total = priceOf(demoMenu(), data);
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders)); // pick up the admin page's ticks
     const id = Math.max(0, ...demoOrders.map(o => o.id)) + 1;
-    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.delivery ? data.room : 'Pickup', item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
+    demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.delivery ? data.room : 'Pickup', item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false, payment: data.payment === 'cash' ? 'cash' : 'zelle' });
     demoSave();
     return wait({ id, total });
   }
   if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
   if (action === 'list') return wait({ orders: (demoLoad() || demoOrders).map(o => ({ ...o })), ...demoStatus() });
+  if (action === 'setCash') {
+    demoCash(data.cash === true);
+    return wait({ ok: true, ...demoStatus() });
+  }
   if (action === 'setOpen') {
     demoOpen(data.open === true);
     return wait({ ok: true, ...demoStatus() });

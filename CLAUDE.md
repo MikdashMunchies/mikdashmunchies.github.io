@@ -52,7 +52,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 
 - **What Ethan charges sellers:** $20 one-time setup + $10/month (Ethan, 2026-10-15; was $10 + $15/month).
   Optional custom domain +$15/yr (costs about $12).
-- **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
+- **Payment: Zelle or cash** (cash added 2026-10-15, on by default; Settings `cash` yes/no, admin "Accept cash"
+  switch). Cash orders skip the Zelle step and are saved at once with Payment = Cash. **Both are self-reported.** Zelle has no API, so every order starts
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
   in the Sheet's checkbox column). Second checkbox **Completed** (Ethan, 2026-10-15): the seller ticks it once the
   order is handed over; the row stays listed, faded and crossed out, and can be unticked. Independent of Zelled.
@@ -85,7 +86,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price, Sale price — optional, must be
   lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it;
   Sold out — checkbox; item stays listed with `soldOut: true`, can't be picked, server refuses orders with it),
-  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail, hoursSun…hoursSat), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
+  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail, hoursSun…hoursSat), `Orders` (… Item, Extras, …, Paid checkbox (header "Zelled" on older Sheets), Completed checkbox = column K,
+  Payment = column L "Cash"/"Zelle" (blank on old rows = Zelle); older Sheets get the
   header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
@@ -132,6 +134,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` (the switch), `closedBy`, `hours`, `today`, `nextOpen` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop → same status fields |
+| POST | `{action:'setCash', password, cash}` | password | Turn cash payments on or off → same status fields (incl. `cash`) |
 | POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
 | POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
@@ -192,6 +195,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
+| 2026-10-15 | Cash payment option, on by default, admin switch | Ethan asked; many students pay cash; seller can turn it off | Zelle only (as before); cash off by default |
 | 2026-10-15 | Menu editing + discounts on the admin page (Sheet stays the store) | Ethan: sellers shouldn't need the Sheet | Editing only in the Sheet; percent-off discounts (Ethan chose a sale price); discount codes |
 | 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |
 | 2026-10-15 | Order notifications via a Telegram bot | Free, reliable from Apps Script, any phone | ntfy.sh push (**tried and shipped first, superseded same day**: its free limit is per IP and all Apps Script shares Google's IPs → 429 "daily quota reached"); paid ntfy (~$5/mo); Gmail email (one ~100/day quota shared by every shop under Ethan's account); Twilio SMS (~$1–2/mo + ~1¢/text + A2P registration); email-to-text (AT&T shut down 2025) |
