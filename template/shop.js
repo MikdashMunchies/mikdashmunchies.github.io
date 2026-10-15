@@ -42,6 +42,8 @@ async function init() {
   $('extras').replaceChildren(...menu.extras.map(x => option('chip', 'extra', x, '+')));
   // A shop with no extras skips that step entirely.
   $('extras').closest('fieldset').hidden = !menu.extras.length;
+  // Cash is the seller's choice (admin "Accept cash" switch); without it, Zelle is the only way.
+  $('pay-step').hidden = !menu.shop.cash;
   update();
 }
 
@@ -79,6 +81,7 @@ function selection() {
     delivery: document.querySelector('input[name=how]:checked')?.value === 'delivery',
     room: $('room').value.trim(),
     note: $('note').value.trim(),
+    payment: menu?.shop.cash && document.querySelector('input[name=payment]:checked')?.value === 'cash' ? 'cash' : 'zelle',
   };
 }
 
@@ -103,6 +106,7 @@ function update() {
   $('fee-label').textContent = '+' + money(menu.shop.deliveryFee);
   $('room-field').hidden = !sel.delivery;
   $('total').textContent = money(priceOf(menu, sel));
+  $('to-pay').textContent = sel.payment === 'cash' ? 'Place order' : 'Continue to payment';
   $('qty').textContent = qty;
   $('qty-minus').disabled = qty <= 1;
   $('qty-plus').disabled = qty >= MAX_QTY;
@@ -136,6 +140,8 @@ $('order-form').addEventListener('submit', async e => {
   } finally {
     $('to-pay').disabled = false;
   }
+  // Cash: no Zelle step, the order goes in now.
+  if (sel.payment === 'cash') return placeOrder($('to-pay'), 'Place order', $('form-error'));
   $('pay-amount').textContent = money(priceOf(menu, sel));
   $('zelle-to').textContent = menu.shop.zelleTo || '';
   $('memo').textContent = sel.delivery ? `${sel.name} – Room ${sel.room}` : `${sel.name} – Pickup`;
@@ -159,30 +165,35 @@ function show(view) {
 
 $('back').addEventListener('click', () => show('order'));
 
-$('place').addEventListener('click', async () => {
-  const button = $('place');
+$('place').addEventListener('click', () => placeOrder($('place'), 'I sent it — place my order', $('pay-error')));
+
+async function placeOrder(button, label, errorBox) {
   button.disabled = true;
   button.textContent = 'Placing your order…';
-  $('pay-error').textContent = '';
+  errorBox.textContent = '';
   try {
     const sel = selection();
     const result = await api('order', sel);
     $('done-id').textContent = result.id;
-    $('done-total').textContent = money(result.total);
-    $('done-where').textContent = sel.delivery ? `heads to room ${sel.room}` : 'will be ready for pickup';
+    const amount = Object.assign(document.createElement('strong'), { className: 'mono', textContent: money(result.total) });
+    const where = sel.delivery ? `heads to room ${sel.room}` : 'will be ready for pickup';
+    $('done-text').replaceChildren(...(sel.payment === 'cash'
+      ? [`You're on the list. Your ${SHOP.item} ${where}. Have `, amount, ' in cash ready.']
+      : ["You're on the list. As soon as your ", amount, ` Zelle shows up, your ${SHOP.item} ${where}.`]));
     show('done');
   } catch (err) {
-    $('pay-error').textContent = err.message;
+    errorBox.textContent = err.message;
   } finally {
     button.disabled = false;
-    button.textContent = 'I sent it — place my order';
+    button.textContent = label;
   }
-});
+}
 
 $('again').addEventListener('click', () => {
   $('order-form').reset();
   qty = 1;
-  document.querySelector('input[name=main]').checked = true; // reset() unticks it
+  const first = document.querySelector('input[name=main]:not(:disabled)'); // reset() unticks it; skip sold-out ones
+  if (first) first.checked = true;
   update();
   show('order');
 });

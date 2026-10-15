@@ -584,6 +584,25 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .maaser-amount { font: 600 1.6rem/1.2 var(--mono); }
 .maaser-sales { font: 400 0.85rem var(--mono); color: var(--ink-soft); }
 
+/* Accept cash switch: a quieter row under the shop status. */
+.cash-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -12px 0 26px;
+  padding: 10px 18px;
+  border: 2px dashed var(--ink);
+  border-radius: var(--radius);
+}
+.cash-status p { margin: 0; display: flex; align-items: baseline; gap: 10px; }
+.cash-status strong { white-space: nowrap; }
+.cash-status[data-on='false'] #cash-state { color: var(--ink-soft); }
+.cash-status .btn { flex: none; min-height: 44px; padding: 0 16px; font-size: 0.9rem; background: var(--white); box-shadow: 2px 2px 0 var(--ink); }
+/* How an order is being paid, under its total. */
+.pay-tag { display: inline-block !important; justify-self: start; margin-top: 4px; padding: 0 8px; border: 1.5px solid var(--ink); border-radius: 999px; font: 600 0.7rem/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.pay-tag.is-cash { background: var(--highlight); }
+
 .admin-top {
   display: flex;
   justify-content: space-between;

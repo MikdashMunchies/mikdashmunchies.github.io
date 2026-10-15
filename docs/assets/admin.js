@@ -9,6 +9,7 @@ let saving = 0;
 // Bumped on every tick. A refresh that started before a tick carries the old answer, so it is
 // thrown away instead of drawn (otherwise a just-ticked box would flip back until the next refresh).
 let ticks = 0;
+let cashOn = true;
 let shown = []; // the orders on screen, so the maaser box and analytics can recount after a tick
 
 $('demo-banner').hidden = !DEMO;
@@ -49,6 +50,7 @@ async function load() {
     if ($('board').hidden) loadMenu(); // once per login, never on auto-refresh: it would wipe edits in progress
     showBoard(true);
     renderOpen(status);
+    renderCash(status);
     if (!hoursDirty) renderHours(status.hours);
     render(orders);
   } catch (err) {
@@ -84,6 +86,27 @@ function renderOpen({ open, closedBy, nextOpen }) {
   $('toggle-open').textContent = open ? 'Close shop' : 'Open shop';
   $('toggle-open').className = open ? 'btn btn-dark' : 'btn btn-primary';
 }
+
+// "Accept cash": buyers can choose to pay cash when they get their food. On unless switched off.
+function renderCash({ cash }) {
+  cashOn = cash !== false;
+  $('cash-status').dataset.on = cashOn;
+  $('cash-state').textContent = cashOn ? 'Accepted' : 'Not accepted';
+  $('toggle-cash').textContent = cashOn ? 'Turn off cash' : 'Accept cash';
+}
+
+$('toggle-cash').addEventListener('click', async () => {
+  const b = $('toggle-cash');
+  b.disabled = true;
+  $('board-error').textContent = '';
+  try {
+    renderCash(await api('setCash', { password, cash: !cashOn }));
+  } catch (err) {
+    $('board-error').textContent = err.message;
+  } finally {
+    b.disabled = false;
+  }
+});
 
 $('toggle-open').addEventListener('click', async () => {
   const b = $('toggle-open');
@@ -231,12 +254,13 @@ function tickCell(o, tr, field, cls, label) {
 
 function row(o) {
   const tr = el('tr');
-  tr.classList.toggle('is-zelled', o.zelled);
-  tr.classList.toggle('is-done', o.completed);
+  tr.classList.toggle('is-zelled', !!o.zelled);
+  tr.classList.toggle('is-done', !!o.completed); // !!: toggle(x, undefined) would flip it on
 
   const order = el('td', 'col-order');
   order.append(el('span', '', `${o.qty} × ${o.item}${o.extras ? ' + ' + o.extras : ''}`));
   order.append(el('span', 'order-total', money(o.total)));
+  order.append(el('span', 'pay-tag' + (o.payment === 'cash' ? ' is-cash' : ''), o.payment === 'cash' ? 'Cash' : 'Zelle'));
   if (o.note) order.append(el('span', 'order-note', `“${o.note}”`));
 
   // When the order came in: the Sheet stamps the time automatically on every new order.
@@ -246,7 +270,7 @@ function row(o) {
     who.append(el('span', 'order-when', when.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })));
   }
   tr.append(who, el('td', 'col-room', o.room), order,
-    tickCell(o, tr, 'zelled', 'is-zelled', `${o.name} paid with Zelle`),
+    tickCell(o, tr, 'zelled', 'is-zelled', `${o.name} paid`),
     tickCell(o, tr, 'completed', 'is-done', `${o.name}'s order completed`));
   return tr;
 }
