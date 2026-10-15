@@ -53,6 +53,7 @@ Use whichever Google account should own the orders: yours if you run it for the 
      (optional add-ons). Prices are plain numbers (`6.5`). Replace the example rows.
    - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
      `deliveryFee` is what delivery costs per order (default `1`; pickup is always free).
+     `ntfyTopic` is a random name for order notifications (see step 3b). Keep it secret.
    - **Orders**: new orders show up here. Don't change the headers.
 5. The admin code is **1234**. To change it: in Apps Script click the gear (**Project
    Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.
@@ -67,6 +68,19 @@ Use whichever Google account should own the orders: yours if you run it for the 
 
 Changed `Code.gs` later? **Deploy → Manage deployments → pencil → Version: New version → Deploy**.
 The URL stays the same. (A "New deployment" would give a new URL.)
+
+### 3b. Order notifications on the seller's phone (free, ntfy)
+
+1. The seller installs **ntfy** (App Store / Google Play), taps **+**, and subscribes to the
+   `ntfyTopic` from the Settings tab (server: the default, ntfy.sh).
+   Older Sheet without that row? Add one: `ntfyTopic` | a random name like `dmp-orders-7k2x9q4m`.
+2. In Apps Script, pick the function **`testNotify`** and click **Run**. The first time, Google
+   asks for permission to "connect to an external service": **Allow** (same steps as above).
+   The seller's phone should buzz with a test notification.
+3. **Do step 2 before deploying a new version** of a script that didn't have notifications yet.
+   Without that Allow, the live shop can't take orders at all.
+
+No `ntfyTopic` row = no notifications; everything else works the same.
 
 ### 4. Publish
 
@@ -89,7 +103,9 @@ It prints `OK: scans to the right link` only after reading the code back. Print 
 ### 6. Test it for real
 
 1. Place an order on your phone. Check a row shows up in the Sheet's **Orders** tab.
-2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too.
+2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too,
+   and the **Maaser** box should go up by 10% of that order.
+   The seller's phone should have buzzed with the order (if `ntfyTopic` is set).
 3. Tap **Close shop**: the shop page should say **Sold out!** Then **Open shop** again.
 
 ## Changing the core (affects every shop)
@@ -98,7 +114,7 @@ Edit files in `template/` or `apps-script/Code.gs`, then:
 
 ```bash
 node build.js
-node --test tests/build.test.js tests/code.test.js
+node --test tests/build.test.js tests/code.test.js tests/api.test.js
 ```
 
 The tests fail if you forgot `node build.js`. Push, and every shop updates at once. If you changed

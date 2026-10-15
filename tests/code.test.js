@@ -25,7 +25,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ open, deliveryFee } = {}) {
+function load({ open, deliveryFee, ntfyTopic, fetchFails } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -39,13 +39,16 @@ function load({ open, deliveryFee } = {}) {
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
+      ...(ntfyTopic === undefined ? [] : [['ntfyTopic', ntfyTopic]]),
     ]),
     Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled']]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass' };
+  const pushes = [];
   const ctx = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); } }) },
+    UrlFetchApp: { fetch: (url, opts) => { if (fetchFails) throw new Error('ntfy is down'); pushes.push({ url, ...opts, body: JSON.parse(opts.payload) }); } },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ text: s, setMimeType() { return this; } }) },
   };
@@ -53,7 +56,7 @@ function load({ open, deliveryFee } = {}) {
   vm.runInContext(CODE, ctx);
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).text);
   const get = action => JSON.parse(ctx.doGet({ parameter: { action } }).text);
-  return { post, get, sheets };
+  return { post, get, sheets, pushes };
 }
 
 const good = { action: 'order', name: 'Avi', delivery: true, room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
@@ -187,4 +190,39 @@ test('a box ticked by hand in the Sheet reads as zelled', () => {
   post(good);
   sheets.Orders.rows[1][9] = 'TRUE'; // how a typed TRUE can come back
   assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).orders[0].zelled, true);
+});
+
+test("a new order sends a push to the shop's ntfy topic", () => {
+  const { post, pushes } = load({ ntfyTopic: ' dmp-orders-k3x9 ' });
+  post({ ...good, note: 'no mustard' });
+  assert.strictEqual(pushes.length, 1);
+  assert.strictEqual(pushes[0].url, 'https://ntfy.sh/');
+  assert.strictEqual(pushes[0].body.topic, 'dmp-orders-k3x9');
+  assert.strictEqual(pushes[0].body.title, 'Order #1 · Avi');
+  assert.strictEqual(pushes[0].body.message, '2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
+});
+
+test('pickup orders say Pickup in the push', () => {
+  const { post, pushes } = load({ ntfyTopic: 'abc' });
+  post({ ...good, delivery: false, extras: [], qty: 1 });
+  assert.strictEqual(pushes[0].body.message, '1 × Pastrami\nPickup · $7.50');
+});
+
+test('no ntfy topic: no push, order still saved', () => {
+  const { post, pushes, sheets } = load();
+  assert.strictEqual(post(good).id, 1);
+  assert.strictEqual(pushes.length, 0);
+  assert.strictEqual(sheets.Orders.rows.length, 2);
+});
+
+test('a failed push never loses the order', () => {
+  const { post, sheets } = load({ ntfyTopic: 'abc', fetchFails: true });
+  assert.deepStrictEqual(post(good), { id: 1, total: 21 });
+  assert.strictEqual(sheets.Orders.rows.length, 2);
+});
+
+test('no push for an order that was refused', () => {
+  const { post, pushes } = load({ ntfyTopic: 'abc', open: 'no' });
+  assert.ok(post(good).error);
+  assert.strictEqual(pushes.length, 0);
 });

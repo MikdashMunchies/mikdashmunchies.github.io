@@ -9,6 +9,7 @@ let saving = 0;
 // Bumped on every tick. A refresh that started before a tick carries the old answer, so it is
 // thrown away instead of drawn (otherwise a just-ticked box would flip back until the next refresh).
 let ticks = 0;
+let shown = []; // the orders on screen, so the maaser box can recount after a tick
 
 $('demo-banner').hidden = !DEMO;
 if (password) load();
@@ -98,7 +99,17 @@ function el(tag, className, text) {
   return node;
 }
 
+function renderMaaser() {
+  const { month, all } = maaserOf(shown);
+  $('maaser-month').textContent = money(month.maaser);
+  $('sales-month').textContent = 'of ' + money(month.sales);
+  $('maaser-all').textContent = money(all.maaser);
+  $('sales-all').textContent = 'of ' + money(all.sales);
+}
+
 function render(orders) {
+  shown = orders;
+  renderMaaser();
   if (!orders.length) {
     const td = el('td', 'empty', 'No orders yet. Share your link to get the first one.');
     td.colSpan = 4;
@@ -132,6 +143,8 @@ function row(o) {
     try {
       await api('update', { password, id: o.id, zelled: box.checked });
       tr.classList.toggle('is-zelled', box.checked);
+      o.zelled = box.checked;
+      renderMaaser();
     } catch (err) {
       box.checked = !box.checked; // put it back so the table never lies
       $('board-error').textContent = err.message;

@@ -13,6 +13,18 @@ function priceOf(menu, sel) {
   return (picked.reduce((s, x) => s + cents(x.price), 0) * sel.qty + fee) / 100;
 }
 
+// Maaser = 10% of Zelled sales (Ethan, 2026-10-15: of sales, not profit; delivery fees count).
+// Unpaid orders aren't money yet. Cents, so many small orders never add up to $X.0000001.
+function maaserOf(orders, now = new Date()) {
+  const paid = orders.filter(o => o.zelled);
+  const thisMonth = o => { const d = new Date(o.time); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); };
+  const sum = list => {
+    const cents = list.reduce((s, o) => s + Math.round(Number(o.total) * 100), 0);
+    return { sales: cents / 100, maaser: Math.round(cents / 10) / 100 };
+  };
+  return { month: sum(paid.filter(thisMonth)), all: sum(paid) };
+}
+
 async function api(action, data = {}) {
   if (DEMO) return demoApi(action, data);
   let out;
