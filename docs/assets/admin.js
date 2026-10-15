@@ -478,7 +478,8 @@ $('save-menu').addEventListener('click', async () => {
 window.addEventListener('beforeunload', e => { if (menuDirty || hoursDirty) e.preventDefault(); });
 
 // --- Hours tab ---------------------------------------------------------------
-// One row per day, Sunday first. Saved as "11:00-00:00" or "closed", like the Sheet's hoursSun ... hoursSat.
+// One row per day, Sunday first. Saved as "11:00-00:00", "08:15-09:00, 13:00-16:00" (closed in between)
+// or "closed", like the Sheet's hoursSun ... hoursSat.
 // The Google script checks the times again and is what actually closes the shop.
 
 let hoursDirty = false;
@@ -487,8 +488,8 @@ function renderHours(hours) {
   $('hours-note').hidden = !!hours;
   $('day-rows').replaceChildren(...DAY_NAMES.map((day, i) => {
     // No hours yet: suggest 11 AM to midnight every day; nothing changes until Save.
-    const [from, to] = hours ? String(hours[i] || '').split('-') : ['11:00', '00:00'];
-    const isOpen = hours ? /:/.test(from || '') && !!to : true;
+    const saved = hours ? String(hours[i] || '').split(',').map(r => r.trim().split('-')) : [['11:00', '00:00']];
+    const isOpen = saved.every(([from, to]) => /:/.test(from || '') && !!to);
     const row = el('div', 'day-row');
     const box = Object.assign(el('input'), { type: 'checkbox', checked: isOpen });
     const name = el('label', 'day-name');
@@ -498,15 +499,33 @@ function renderHours(hours) {
       t.setAttribute('aria-label', day + ' ' + label);
       return t;
     };
-    const open = time(isOpen ? from : '11:00', 'opens');
-    const close = time(isOpen ? to : '00:00', 'closes');
     const times = el('div', 'day-times');
-    times.append(open, el('span', 'day-to', 'to'), close);
+    const more = button('day-add', '+ Add another time');
+    // One "opens to closes" line per time; every line after the first can be removed.
+    const addRange = (from, to, first) => {
+      const range = el('div', 'day-range');
+      const open = time(from, 'opens');
+      const close = time(to, 'closes');
+      range.append(open, el('span', 'day-to', 'to'), close);
+      if (first) {
+        range.append(el('span')); // keeps the first line's times lined up with the ones that have ✕
+      } else {
+        const x = button('day-remove', '✕');
+        x.setAttribute('aria-label', 'Remove this ' + day + ' time');
+        x.addEventListener('click', () => { range.remove(); markHoursDirty(); more.focus(); });
+        range.append(x);
+      }
+      [open, close].forEach(t => t.addEventListener('input', markHoursDirty));
+      times.insertBefore(range, more);
+      return open;
+    };
+    times.append(more);
+    (isOpen ? saved : [['11:00', '00:00']]).forEach(([from, to], n) => addRange(from, to, n === 0));
+    more.addEventListener('click', () => { addRange('', '', false).focus(); markHoursDirty(); });
     const closedNote = el('span', 'day-closed', 'Closed');
     const show = () => { times.hidden = !box.checked; closedNote.hidden = box.checked; };
     show();
     box.addEventListener('change', () => { show(); markHoursDirty(); });
-    [open, close].forEach(t => t.addEventListener('input', markHoursDirty));
     row.append(name, times, closedNote);
     return row;
   }));
@@ -525,11 +544,15 @@ function markHoursDirty() {
 
 $('save-hours').addEventListener('click', async () => {
   const hours = [...document.querySelectorAll('.day-row')].map(r => {
-    const [box, open, close] = r.querySelectorAll('input');
-    return box.checked ? open.value + '-' + close.value : 'closed';
+    if (!r.querySelector('.day-name input').checked) return 'closed';
+    return [...r.querySelectorAll('.day-range')].map(x => {
+      const [open, close] = x.querySelectorAll('input');
+      return open.value + '-' + close.value;
+    }).join(', ');
   });
-  const bad = hours.findIndex(h => h !== 'closed' && (!/^\d\d:\d\d-\d\d:\d\d$/.test(h) || h.slice(0, 5) === h.slice(6)));
-  if (bad >= 0) return setHoursStatus(DAY_NAMES[bad] + ' needs an opening and a closing time that are different.', true);
+  const badTime = t => !/^\d\d:\d\d-\d\d:\d\d$/.test(t) || t.slice(0, 5) === t.slice(6);
+  const bad = hours.findIndex(h => h !== 'closed' && h.split(', ').some(badTime));
+  if (bad >= 0) return setHoursStatus(DAY_NAMES[bad] + ': every time needs an opening and a closing time that are different.', true);
   const b = $('save-hours');
   b.disabled = true;
   setHoursStatus('Saving…');

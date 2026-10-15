@@ -550,6 +550,36 @@ test('a missing or unreadable day is closed; every day closed = no next opening'
   assert.strictEqual(never.nextOpen, null);
 });
 
+test('several times in one day: open in each, closed in the break, next opening later today', () => {
+  const split = { ...weekdays, Wed: '08:15-09:00, 13:00-16:00' };
+  assert.strictEqual(shopAt('3 08:14', split).open, false);
+  assert.deepStrictEqual({ ...shopAt('3 08:14', split).nextOpen }, { day: 3, inDays: 0, time: '08:15' });
+  assert.strictEqual(shopAt('3 08:15', split).open, true);
+  assert.strictEqual(shopAt('3 08:59', split).open, true);
+  const lunch = shopAt('3 09:00', split);
+  assert.strictEqual(lunch.open, false);
+  assert.strictEqual(lunch.closedBy, 'hours');
+  assert.deepStrictEqual({ ...lunch.nextOpen }, { day: 3, inDays: 0, time: '13:00' });
+  assert.strictEqual(shopAt('3 12:59', split).open, false);
+  assert.strictEqual(shopAt('3 13:00', split).open, true);
+  assert.strictEqual(shopAt('3 16:00', split).open, false);
+  assert.deepStrictEqual({ ...shopAt('3 16:00', split).nextOpen }, { day: 4, inDays: 1, time: '11:00' });
+  // Times can be listed in any order; one bad part closes the whole day (like any unreadable day).
+  assert.strictEqual(shopAt('3 13:30', { ...weekdays, Wed: '13:00-16:00,08:15-09:00' }).open, true);
+  assert.strictEqual(shopAt('3 13:30', { ...weekdays, Wed: '08:15-09:00, lunch' }).open, false);
+  // A late range still runs past midnight.
+  assert.strictEqual(shopAt('4 00:30', { ...weekdays, Wed: '08:00-09:00, 20:00-01:00' }).open, true);
+});
+
+test('setHours accepts several times per day and refuses a bad one', () => {
+  const { post, get } = load({ clock: '3 09:30' });
+  const week = ['closed', 'closed', 'closed', '08:15-09:00, 13:00-16:00', 'closed', 'closed', 'closed'];
+  assert.strictEqual(post({ action: 'setHours', password: PW, hours: week }).closedBy, 'hours');
+  assert.strictEqual(get('menu').shop.hours[3], '08:15-09:00, 13:00-16:00');
+  const r = post({ action: 'setHours', password: PW, hours: week.map((h, i) => (i === 1 ? '08:00-09:00, 10:00-10:00' : h)) });
+  assert.match(r.error, /^Mon:/);
+});
+
 test('orders are refused outside the hours and saved inside them', () => {
   const closed = load({ hours: weekdays, clock: '6 12:00' });
   assert.match(closed.post(good).error, /just closed/);

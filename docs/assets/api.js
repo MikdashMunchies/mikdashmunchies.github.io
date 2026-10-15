@@ -64,10 +64,11 @@ function timeText(t) {
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-// One day as the Sheet stores it ("11:00-00:00", "closed" or "") -> "11:00 AM – midnight" or "Closed".
+// One day as the Sheet stores it ("11:00-00:00", "08:15-09:00, 13:00-16:00", "closed" or "")
+// -> "11:00 AM – midnight", "8:15 AM – 9:00 AM, 1:00 PM – 4:00 PM" or "Closed".
 function dayText(h) {
-  const parts = String(h || '').split('-');
-  return parts.length === 2 && /:/.test(parts[0]) ? timeText(parts[0]) + ' – ' + timeText(parts[1]) : 'Closed';
+  const ranges = String(h || '').split(',').map(r => r.trim().split('-'));
+  return ranges.every(p => p.length === 2 && /:/.test(p[0])) ? ranges.map(p => timeText(p[0]) + ' – ' + timeText(p[1])).join(', ') : 'Closed';
 }
 
 // The Google script's nextOpen -> "today at 11:00 AM", "tomorrow at …", "Sunday at …".
@@ -186,14 +187,17 @@ function demoHours(value) {
 
 function demoDay(text) {
   const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t).trim()); return m && m[1] < 24 && m[2] < 60 ? m[1] * 60 + Number(m[2]) : null; };
-  const parts = String(text || '').split('-');
-  if (parts.length !== 2) return null;
-  const from = mins(parts[0]);
-  let to = mins(parts[1]);
-  if (from === null || to === null) return null;
-  if (to === 0) to = 1440;
-  if (to === from) return null;
-  return { from, to: to < from ? to + 1440 : to };
+  const ranges = String(text || '').split(',').map(range => {
+    const parts = range.split('-');
+    if (parts.length !== 2) return null;
+    const from = mins(parts[0]);
+    let to = mins(parts[1]);
+    if (from === null || to === null) return null;
+    if (to === 0) to = 1440;
+    if (to === from) return null;
+    return { from, to: to < from ? to + 1440 : to };
+  });
+  return ranges.every(Boolean) ? ranges.sort((a, b) => a.from - b.from) : [];
 }
 
 function demoStatus(now = new Date()) {
@@ -207,10 +211,10 @@ function demoStatus(now = new Date()) {
     const at = d => demoDay(hours[(d + 7) % 7]);
     const today = at(day);
     const yesterday = at(day - 1);
-    inHours = !!(today && minute >= today.from && minute < today.to) || !!(yesterday && minute + 1440 < yesterday.to);
+    inHours = today.some(h => minute >= h.from && minute < h.to) || yesterday.some(h => minute + 1440 < h.to);
     for (let i = 0; i < 8 && !next; i++) {
-      const h = at(day + i);
-      if (h && (i > 0 || h.from > minute)) next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
+      const h = at(day + i).find(r => i > 0 || r.from > minute);
+      if (h) next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
     }
   }
   return { open: switchOpen, closedBy: !switchOpen ? 'switch' : !inHours ? 'hours' : null, hours, today: day, nextOpen: next, cash: demoCash() };
@@ -245,8 +249,8 @@ function demoApi(action, data) {
     return wait({ ok: true, ...demoStatus() });
   }
   if (action === 'setHours') {
-    const bad = (data.hours || []).findIndex(h => h && h !== 'closed' && !demoDay(h));
-    if (bad >= 0) return fail(DAY_NAMES[bad].slice(0, 3) + ': pick an opening and a closing time that are different.');
+    const bad = (data.hours || []).findIndex(h => h && h !== 'closed' && !demoDay(h).length);
+    if (bad >= 0) return fail(DAY_NAMES[bad].slice(0, 3) + ': every time needs an opening and a closing time that are different.');
     demoHours(data.hours.map(h => h || 'closed'));
     return wait({ ok: true, ...demoStatus() });
   }

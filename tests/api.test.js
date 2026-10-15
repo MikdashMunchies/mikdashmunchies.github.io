@@ -121,3 +121,17 @@ test('demo hours: no hours = open; inside / outside / past midnight / closed day
   c.demoOpen(false);
   assert.strictEqual(c.demoStatus(dayAt(4, 0, 59)).closedBy, 'switch'); // the Close button wins
 });
+
+test('demo hours: several times in one day, closed in between', () => {
+  const c = demoShop();
+  c.demoHours(week.map((h, i) => (i === 3 ? '13:00-16:00, 08:15-09:00' : h))); // any order
+  assert.strictEqual(c.demoStatus(dayAt(3, 8, 14)).closedBy, 'hours');
+  assert.strictEqual(c.demoStatus(dayAt(3, 8, 15)).closedBy, null);
+  const lunch = c.demoStatus(dayAt(3, 9));
+  assert.strictEqual(lunch.closedBy, 'hours');
+  assert.deepStrictEqual({ ...lunch.nextOpen }, { day: 3, inDays: 0, time: '13:00' }); // later today
+  assert.strictEqual(c.demoStatus(dayAt(3, 15, 59)).closedBy, null);
+  assert.strictEqual(c.demoStatus(dayAt(3, 16)).closedBy, 'hours');
+  assert.strictEqual(ctx.dayText('08:15-09:00, 13:00-16:00'), '8:15 AM – 9:00 AM, 1:00 PM – 4:00 PM');
+  assert.strictEqual(ctx.dayText('08:15-09:00, lunch'), 'Closed');
+});
