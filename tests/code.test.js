@@ -279,3 +279,11 @@ test('testNotify fails loudly when ntfy cannot be reached or refuses', () => {
   ok.testNotify();
   assert.strictEqual(ok.pushes.length, 1);
 });
+
+test('the public menu never shows the ntfy topic (or any other private setting)', () => {
+  const { get, post } = load({ ntfyTopic: 'secret-topic' });
+  const m = get('menu');
+  assert.deepStrictEqual(Object.keys(m.shop).sort(), ['deliveryFee', 'open', 'zelleTo']);
+  assert.ok(!JSON.stringify(m).includes('secret-topic'));
+  assert.ok(!JSON.stringify(post({ action: 'list', password: 'secret-pass' })).includes('secret-topic'));
+});

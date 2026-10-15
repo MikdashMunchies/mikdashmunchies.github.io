@@ -7,7 +7,7 @@ const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action === 'menu') return json_(getMenu_());
+  if (e && e.parameter && e.parameter.action === 'menu') return json_(publicMenu_());
   return json_({ error: 'Unknown action.' });
 }
 
@@ -82,6 +82,14 @@ function getMenu_() {
   const fee = Number(menu.shop.deliveryFee);
   menu.shop.deliveryFee = menu.shop.deliveryFee !== undefined && menu.shop.deliveryFee !== '' && fee >= 0 ? fee : 1;
   return menu;
+}
+
+// The menu link is public: only the settings the website uses. Everything else in Settings
+// (like ntfyTopic, which would let anyone read the order notifications) stays private.
+function publicMenu_() {
+  const menu = getMenu_();
+  const { zelleTo, open, deliveryFee } = menu.shop;
+  return { ...menu, shop: { zelleTo, open, deliveryFee } };
 }
 
 // Works out the real price from the Menu tab. Anything the browser says about price is ignored.

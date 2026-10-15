@@ -107,7 +107,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `?action=menu` | none | Menu + public settings, incl. `shop.open` |
+| GET | `?action=menu` | none | Menu + only the public settings `zelleTo`, `open`, `deliveryFee` (`publicMenu_()`; never `ntfyTopic`) |
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
