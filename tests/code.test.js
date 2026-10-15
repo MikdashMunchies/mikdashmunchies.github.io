@@ -23,7 +23,7 @@ function fakeSheet(rows) {
     getLastRow: () => rows.length,
     getRange: (row, col, numRows = 1, numCols = 1) => ({
       getValue: () => (rows[row - 1] || [])[col - 1] ?? '',
-      setValue: v => { rows[row - 1][col - 1] = v; },
+      setValue: v => { raw.push([rows[row - 1][0], v]); rows[row - 1][col - 1] = typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v; },
       setValues: values => {
         raw.push(...values.map(r => [...r]));
         values.forEach((r, i) => {
@@ -40,7 +40,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ menuRows, open, deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
+function load({ menuRows, open, hours, clock = '3 12:00', deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
   const sheets = {
     Menu: fakeSheet(menuRows || [
       ['Type', 'Name', 'Price'],
@@ -53,6 +53,7 @@ function load({ menuRows, open, deliveryFee, chatIds, emails, mailFails, token =
       ['Key', 'Value'],
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
+      ...Object.entries(hours || {}).map(([day, v]) => ['hours' + day, v]),
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
       ...(chatIds === undefined ? [] : [['telegramChatId', chatIds]]),
       ...(emails === undefined ? [] : [['notifyEmail', emails]]),
@@ -64,7 +65,9 @@ function load({ menuRows, open, deliveryFee, chatIds, emails, mailFails, token =
   const mails = [];
   const logs = [];
   const ctx = {
-    SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
+    SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n], getSpreadsheetTimeZone: () => 'America/New_York' }) },
+    // The shop's clock, as the script asks for it ('u HH:mm'): '3 12:00' = Wednesday noon. 7 = Sunday.
+    Utilities: { formatDate: (d, tz, fmt) => { assert.strictEqual(fmt, 'u HH:mm'); return clock; } },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); } }) },
     UrlFetchApp: {
       fetch: (url, opts = {}) => {
@@ -182,7 +185,10 @@ test('admin can close and reopen the shop, with the password only', () => {
   assert.ok(post({ action: 'setOpen', password: 'nope', open: false }).error);
   assert.strictEqual(get('menu').shop.open, true);
 
-  assert.deepStrictEqual(post({ action: 'setOpen', password: 'secret-pass', open: false }), { ok: true, open: false });
+  const closed = post({ action: 'setOpen', password: 'secret-pass', open: false });
+  assert.strictEqual(closed.ok, true);
+  assert.strictEqual(closed.open, false);
+  assert.strictEqual(closed.closedBy, 'switch');
   assert.strictEqual(get('menu').shop.open, false);
   assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).open, false);
   assert.ok(post(good).error);
@@ -322,7 +328,7 @@ test('telegramChats lists who pressed Start, once each', () => {
 test('the public menu never shows the Telegram chat ids (or any other private setting)', () => {
   const { get, post } = load({ chatIds: 'secret-topic' });
   const m = get('menu');
-  assert.deepStrictEqual(Object.keys(m.shop).sort(), ['deliveryFee', 'open', 'zelleTo']);
+  assert.deepStrictEqual(Object.keys(m.shop).sort(), ['closedBy', 'deliveryFee', 'hours', 'nextOpen', 'open', 'today', 'zelleTo']);
   assert.ok(!JSON.stringify(m).includes('secret-topic'));
   assert.ok(!JSON.stringify(post({ action: 'list', password: 'secret-pass' })).includes('secret-topic'));
 });
@@ -432,6 +438,117 @@ test('a bad menu is refused and nothing is changed', () => {
     const r = post({ action: 'saveMenu', password: PW, items });
     assert.match(r.error || '', message, JSON.stringify(items).slice(0, 80));
     assert.strictEqual(JSON.stringify(sheets.Menu.rows), before);
+  }
+});
+
+// --- Opening hours ---------------------------------------------------------
+
+const weekdays = { Sun: '11:00-00:00', Mon: '11:00-00:00', Tue: '11:00-00:00', Wed: '11:00-00:00', Thu: '11:00-00:00', Fri: '09:00-14:00', Sat: 'closed' };
+const shopAt = (clock, hours = weekdays) => load({ hours, clock }).get('menu').shop;
+
+test('no hours rows = open all the time, like before', () => {
+  const s = shopAt('6 03:00', null);
+  assert.strictEqual(s.open, true);
+  assert.strictEqual(s.hours, null);
+  assert.strictEqual(s.closedBy, null);
+});
+
+test('open inside the hours, closed outside, with when it opens next', () => {
+  assert.strictEqual(shopAt('3 12:00').open, true); // Wed noon
+  assert.strictEqual(shopAt('3 11:00').open, true); // the opening minute counts
+  const early = shopAt('3 10:59');
+  assert.strictEqual(early.open, false);
+  assert.strictEqual(early.closedBy, 'hours');
+  assert.deepStrictEqual({ ...early.nextOpen }, { day: 3, inDays: 0, time: '11:00' });
+  assert.deepStrictEqual([...shopAt('3 12:00').hours], ['11:00-00:00', '11:00-00:00', '11:00-00:00', '11:00-00:00', '11:00-00:00', '09:00-14:00', 'closed']);
+  assert.strictEqual(shopAt('3 12:00').today, 3);
+});
+
+test('closing at 00:00 means midnight', () => {
+  assert.strictEqual(shopAt('3 23:59').open, true);
+  assert.strictEqual(shopAt('4 00:00').open, false); // Thu 12am: Wednesday is over
+  assert.strictEqual(shopAt('4 00:30').open, false);
+  assert.strictEqual(shopAt('3 04:00', { ...weekdays, Wed: '00:00-00:00' }).open, true); // 24 hours
+});
+
+test('a closed day and the Friday early close skip ahead to the next opening', () => {
+  assert.strictEqual(shopAt('5 13:59').open, true);
+  const fri = shopAt('5 14:00');
+  assert.strictEqual(fri.open, false);
+  assert.deepStrictEqual({ ...fri.nextOpen }, { day: 0, inDays: 2, time: '11:00' }); // Saturday closed -> Sunday
+  assert.strictEqual(shopAt('6 12:00').open, false);
+  assert.strictEqual(shopAt('7 12:00').today, 0); // 'u' 7 = Sunday
+  assert.strictEqual(shopAt('7 12:00').open, true);
+});
+
+test('hours that run past midnight', () => {
+  const late = { ...weekdays, Wed: '18:00-01:00' };
+  assert.strictEqual(shopAt('3 17:59', late).open, false);
+  assert.strictEqual(shopAt('3 23:00', late).open, true);
+  assert.strictEqual(shopAt('4 00:59', late).open, true); // still Wednesday night
+  assert.strictEqual(shopAt('4 01:00', late).open, false);
+});
+
+test('a missing or unreadable day is closed; every day closed = no next opening', () => {
+  assert.strictEqual(shopAt('3 12:00', { Mon: '11:00-20:00' }).open, false); // Wed has no row
+  assert.strictEqual(shopAt('3 12:00', { ...weekdays, Wed: 'lunch time' }).open, false);
+  const never = shopAt('3 12:00', { Sun: 'closed', Mon: '', Tue: '', Wed: '', Thu: '', Fri: '', Sat: '' });
+  assert.strictEqual(never.open, false);
+  assert.strictEqual(never.nextOpen, null);
+});
+
+test('orders are refused outside the hours and saved inside them', () => {
+  const closed = load({ hours: weekdays, clock: '6 12:00' });
+  assert.match(closed.post(good).error, /just closed/);
+  assert.strictEqual(closed.sheets.Orders.rows.length, 1);
+  const open = load({ hours: weekdays, clock: '3 12:00' });
+  assert.strictEqual(open.post(good).id, 1);
+});
+
+test('the Close button wins over the hours, and says sold out', () => {
+  const { post, get } = load({ hours: weekdays, clock: '3 12:00', open: 'no' });
+  assert.strictEqual(get('menu').shop.closedBy, 'switch');
+  assert.match(post(good).error, /sold out/);
+});
+
+test('admin list tells the switch apart from the hours', () => {
+  const { post } = load({ hours: weekdays, clock: '6 12:00' });
+  const r = post({ action: 'list', password: PW });
+  assert.strictEqual(r.open, true); // the switch is on...
+  assert.strictEqual(r.closedBy, 'hours'); // ...but it is Saturday
+  assert.strictEqual(r.hours.length, 7);
+});
+
+test('setHours saves 7 days as text and needs the password', () => {
+  const { post, get, sheets } = load({ clock: '3 12:00' });
+  const week = ['', '11:00-00:00', '11:00-00:00', '11:00-00:00', '11:00-00:00', '09:00-14:00', 'closed'];
+  assert.match(post({ action: 'setHours', password: 'nope', hours: week }).error, /password/i);
+  assert.strictEqual(get('menu').shop.hours, null);
+  const r = post({ action: 'setHours', password: PW, hours: week });
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.closedBy, null);
+  assert.deepStrictEqual([...get('menu').shop.hours], ['closed', ...week.slice(1)]);
+  // Written with a leading ' so Sheets keeps "11:00-00:00" as text instead of guessing a time.
+  assert.ok(sheets.Settings.raw.some(row => row[0] === 'hoursMon' && row[1] === "'11:00-00:00"));
+  // Saving again changes the rows instead of adding more.
+  post({ action: 'setHours', password: PW, hours: week.map(() => '10:00-13:00') });
+  assert.strictEqual(sheets.Settings.rows.filter(row => row[0] === 'hoursMon').length, 1);
+  assert.strictEqual(get('menu').shop.open, true);
+});
+
+test('bad hours are refused and nothing is changed', () => {
+  const bad = [
+    ['not a list', /7 days/],
+    [['11:00-12:00'], /7 days/],
+    [['', '', '', '10:00-10:00', '', '', ''], /Wed/],
+    [['', '25:00-26:00', '', '', '', '', ''], /Mon/],
+    [['', '', '', '', '', '', 'noon'], /Sat/],
+  ];
+  for (const [hours, message] of bad) {
+    const { post, sheets } = load();
+    const before = JSON.stringify(sheets.Settings.rows);
+    assert.match(post({ action: 'setHours', password: PW, hours }).error || '', message);
+    assert.strictEqual(JSON.stringify(sheets.Settings.rows), before);
   }
 });
 

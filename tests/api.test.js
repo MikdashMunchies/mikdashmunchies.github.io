@@ -79,3 +79,45 @@ test('analytics: no orders', () => {
   const s = stats([], now);
   assert.deepStrictEqual([s.orders, s.sales, s.average, s.unpaid, s.busiestHour, s.best.length], [0, 0, 0, 0, null, 0]);
 });
+
+// --- Opening hours ---------------------------------------------------------
+
+test('hours are written out for people', () => {
+  assert.strictEqual(ctx.timeText('13:30'), '1:30 PM');
+  assert.strictEqual(ctx.timeText('09:00'), '9:00 AM');
+  assert.strictEqual(ctx.timeText('00:00'), 'midnight');
+  assert.strictEqual(ctx.dayText('11:00-00:00'), '11:00 AM – midnight');
+  assert.strictEqual(ctx.dayText('closed'), 'Closed');
+  assert.strictEqual(ctx.dayText(''), 'Closed');
+  assert.strictEqual(ctx.whenText({ day: 3, inDays: 0, time: '11:00' }), 'today at 11:00 AM');
+  assert.strictEqual(ctx.whenText({ day: 4, inDays: 1, time: '11:00' }), 'tomorrow at 11:00 AM');
+  assert.strictEqual(ctx.whenText({ day: 0, inDays: 3, time: '09:30' }), 'Sunday at 9:30 AM');
+  assert.strictEqual(ctx.whenText(null), null);
+});
+
+// Demo mode works out open/closed in the browser with the same rules as the Google script.
+function demoShop() {
+  const store = {};
+  const c = { SHOP: { ...SHOP, apiUrl: '' }, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } } };
+  vm.createContext(c);
+  vm.runInContext(CODE, c);
+  return c;
+}
+const week = ['11:00-00:00', '11:00-00:00', '11:00-00:00', '11:00-00:00', '11:00-00:00', '09:00-14:00', 'closed'];
+const dayAt = (day, h, m = 0) => new Date(2026, 9, 11 + day, h, m); // Oct 11 2026 is a Sunday
+
+test('demo hours: no hours = open; inside / outside / past midnight / closed day', () => {
+  const c = demoShop();
+  assert.strictEqual(c.demoStatus(dayAt(6, 3)).closedBy, null);
+  c.demoHours(week);
+  assert.strictEqual(c.demoStatus(dayAt(3, 12)).closedBy, null); // Wed noon
+  assert.strictEqual(c.demoStatus(dayAt(3, 10, 59)).closedBy, 'hours');
+  assert.strictEqual(c.demoStatus(dayAt(4, 0)).closedBy, 'hours'); // midnight close
+  const fri = c.demoStatus(dayAt(5, 14));
+  assert.strictEqual(fri.closedBy, 'hours');
+  assert.deepStrictEqual({ ...fri.nextOpen }, { day: 0, inDays: 2, time: '11:00' });
+  c.demoHours(week.map((h, i) => (i === 3 ? '18:00-01:00' : h)));
+  assert.strictEqual(c.demoStatus(dayAt(4, 0, 59)).closedBy, null); // still Wednesday night
+  c.demoOpen(false);
+  assert.strictEqual(c.demoStatus(dayAt(4, 0, 59)).closedBy, 'switch'); // the Close button wins
+});

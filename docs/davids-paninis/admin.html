@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=348530b42e">
+  <link rel="stylesheet" href="../assets/style.css?v=41287c7dd8">
   <style>:root { --accent: #D2341B; --highlight: #FFC233; }</style>
 </head>
 <body>
@@ -46,6 +46,7 @@
       <div class="tabs" role="tablist" aria-label="Admin views">
         <button type="button" role="tab" id="tab-orders" aria-controls="panel-orders" aria-selected="true">Orders</button>
         <button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" tabindex="-1">Menu</button>
+        <button type="button" role="tab" id="tab-hours" aria-controls="panel-hours" aria-selected="false" tabindex="-1">Hours</button>
         <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Analytics</button>
       </div>
       <p id="board-error" class="error" role="alert"></p>
@@ -89,6 +90,16 @@
         <p class="menu-status" id="menu-status" role="status"></p>
         <button type="button" class="btn btn-primary btn-wide" id="save-menu">Save menu</button>
       </div>
+      <div role="tabpanel" id="panel-hours" aria-labelledby="tab-hours" hidden>
+        <p class="menu-help">Pick the days and times you take orders. Outside them the site says <strong>Closed</strong> and shows when you open next. Closing at <strong>12:00 AM</strong> means midnight.</p>
+        <section class="stat-card" aria-labelledby="open-hours-title">
+          <h2 class="stat-card-title" id="open-hours-title">Opening hours</h2>
+          <p class="stat-card-lead" id="hours-note" hidden>No hours set yet: you're open whenever the shop is.</p>
+          <div class="day-rows" id="day-rows"></div>
+        </section>
+        <p class="menu-status" id="hours-status" role="status"></p>
+        <button type="button" class="btn btn-primary btn-wide" id="save-hours">Save hours</button>
+      </div>
       <div role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
         <dl class="stat-tiles">
           <div class="stat"><dt>Orders</dt><dd id="stat-orders">0</dd></div>
@@ -112,7 +123,7 @@
   </main>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=e12d6f16bf"></script>
-  <script src="../assets/admin.js?v=fa23b3d508"></script>
+  <script src="../assets/api.js?v=8673f5585e"></script>
+  <script src="../assets/admin.js?v=5e5d78fff9"></script>
 </body>
 </html>

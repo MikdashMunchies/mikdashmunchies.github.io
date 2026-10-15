@@ -15,8 +15,18 @@ async function init() {
     $('to-pay').disabled = true;
     return;
   }
+  if (menu.shop.hours) {
+    $('hours-today').textContent = 'Today: ' + dayText(menu.shop.hours[menu.shop.today]);
+    $('hours-today').hidden = false;
+  }
   if (!menu.shop.open) {
     document.body.classList.add('is-closed');
+    if (menu.shop.closedBy === 'hours') {
+      const when = whenText(menu.shop.nextOpen);
+      $('closed-title').textContent = 'Closed';
+      $('closed-text').textContent = when ? `We open ${when}. See you then!` : "We're closed for now. Check back soon.";
+      $('closed-sticker').textContent = 'Closed';
+    }
     $('order').hidden = true;
     $('closed').hidden = false;
     return;

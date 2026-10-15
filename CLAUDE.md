@@ -85,7 +85,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price, Sale price — optional, must be
   lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it;
   Sold out — checkbox; item stays listed with `soldOut: true`, can't be picked, server refuses orders with it),
-  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
+  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail, hoursSun…hoursSat), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
   header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
@@ -93,6 +93,14 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Open / sold out:** Settings `open` (`yes`/`no`; missing = open). Admin's Close shop button
   sets it. When closed the site shows "Sold out!" and the server refuses orders. The site re-checks
   before showing Zelle details so nobody pays after closing.
+- **Opening hours / auto-close** (Ethan, 2026-10-15): Settings `hoursSun`…`hoursSat` = `"11:00-00:00"` or
+  `closed` (stored as text via `safeCell_`). No hours rows at all = always open (old behaviour). Close `00:00`
+  = midnight; close before open runs past midnight; `00:00-00:00` = all day; unreadable = closed.
+  `hoursNow_()` uses the **Sheet's time zone** (`getSpreadsheetTimeZone()`, `formatDate(...,'u HH:mm')`).
+  Buyers can order only if the switch is on AND it's inside the hours (`shop.open`); `closedBy` =
+  `switch` (shows "Sold out") or `hours` (shows "Closed · opens …", from `nextOpen`). The Close button wins;
+  Open can't force the shop open outside its hours. Admin **Hours** tab (Orders | Menu | Hours | Analytics)
+  saves via `setHours`. Demo mode copies the rules in `api.js` (`demoStatus()`, browser clock) — keep the two in step.
 - **No emails** (Ethan, 2026-10-12: not needed). The admin page is where orders are seen.
 - **Order notifications: Telegram and/or email** (Settings `notifyEmail`, comma-separated; `MailApp`, one
   email to all addresses; shares the deploying account's ~100 recipients/day Gmail quota across ALL shops;
@@ -120,10 +128,11 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `?action=menu` | none | Menu + only the public settings `zelleTo`, `open`, `deliveryFee` (`publicMenu_()`; never `telegramChatId`, `notifyEmail` or anything else) |
+| GET | `?action=menu` | none | Menu + only the public settings `zelleTo`, `open` (= can order now), `deliveryFee`, `closedBy`, `hours`, `today`, `nextOpen` (`publicMenu_()`; never `telegramChatId`, `notifyEmail` or anything else) |
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
-| POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
-| POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
+| POST | `{action:'list', password}` | password | All orders, newest first, + `open` (the switch), `closedBy`, `hours`, `today`, `nextOpen` |
+| POST | `{action:'setOpen', password, open}` | password | Open or close the shop → same status fields |
+| POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
 | POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 

@@ -53,6 +53,30 @@ function analyticsOf(orders, now = new Date()) {
   };
 }
 
+// --- Opening hours (the Google script decides; these only write it out) ---------
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// "13:30" -> "1:30 PM", "00:00" -> "midnight".
+function timeText(t) {
+  const [h, m] = String(t).split(':').map(Number);
+  if (h === 0 && m === 0) return 'midnight';
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// One day as the Sheet stores it ("11:00-00:00", "closed" or "") -> "11:00 AM – midnight" or "Closed".
+function dayText(h) {
+  const parts = String(h || '').split('-');
+  return parts.length === 2 && /:/.test(parts[0]) ? timeText(parts[0]) + ' – ' + timeText(parts[1]) : 'Closed';
+}
+
+// The Google script's nextOpen -> "today at 11:00 AM", "tomorrow at …", "Sunday at …".
+function whenText(next) {
+  if (!next) return null;
+  const day = next.inDays === 0 ? 'today' : next.inDays === 1 ? 'tomorrow' : DAY_NAMES[next.day];
+  return day + ' at ' + timeText(next.time);
+}
+
 async function api(action, data = {}) {
   if (DEMO) return demoApi(action, data);
   let out;
@@ -134,12 +158,61 @@ function demoMenu() {
   return { ...DEMO_MENU, mains: items.filter(i => i.type === 'main').map(toItem), extras: items.filter(i => i.type === 'extra').map(toItem) };
 }
 
+// Demo hours, kept per shop like the demo menu. Same rules as the Google script's hoursNow_
+// (copied, because the demo has no script), using this browser's clock.
+const DEMO_HOURS_KEY = 'demoHours:' + SHOP.slug;
+function demoHours(value) {
+  try {
+    if (value !== undefined) localStorage.setItem(DEMO_HOURS_KEY, JSON.stringify(value));
+    const h = JSON.parse(localStorage.getItem(DEMO_HOURS_KEY));
+    return Array.isArray(h) ? h : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function demoDay(text) {
+  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t).trim()); return m && m[1] < 24 && m[2] < 60 ? m[1] * 60 + Number(m[2]) : null; };
+  const parts = String(text || '').split('-');
+  if (parts.length !== 2) return null;
+  const from = mins(parts[0]);
+  let to = mins(parts[1]);
+  if (from === null || to === null) return null;
+  if (to === 0) to = 1440;
+  if (to === from) return null;
+  return { from, to: to < from ? to + 1440 : to };
+}
+
+function demoStatus(now = new Date()) {
+  const hours = demoHours();
+  const switchOpen = demoOpen();
+  const day = now.getDay();
+  const minute = now.getHours() * 60 + now.getMinutes();
+  let inHours = true;
+  let next = null;
+  if (hours) {
+    const at = d => demoDay(hours[(d + 7) % 7]);
+    const today = at(day);
+    const yesterday = at(day - 1);
+    inHours = !!(today && minute >= today.from && minute < today.to) || !!(yesterday && minute + 1440 < yesterday.to);
+    for (let i = 0; i < 8 && !next; i++) {
+      const h = at(day + i);
+      if (h && (i > 0 || h.from > minute)) next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
+    }
+  }
+  return { open: switchOpen, closedBy: !switchOpen ? 'switch' : !inHours ? 'hours' : null, hours, today: day, nextOpen: next };
+}
+
 function demoApi(action, data) {
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   const fail = message => wait(null).then(() => { throw new Error(message); });
-  if (action === 'menu') return wait({ ...demoMenu(), shop: { ...DEMO_MENU.shop, open: demoOpen() } });
+  if (action === 'menu') {
+    const st = demoStatus();
+    return wait({ ...demoMenu(), shop: { ...DEMO_MENU.shop, ...st, open: !st.closedBy } });
+  }
   if (action === 'order') {
-    if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
+    const closedBy = demoStatus().closedBy;
+    if (closedBy) return fail((closedBy === 'hours' ? 'Sorry, we just closed' : 'Sorry, we just sold out') + ", so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
     const total = priceOf(demoMenu(), data);
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders)); // pick up the admin page's ticks
     const id = Math.max(0, ...demoOrders.map(o => o.id)) + 1;
@@ -148,8 +221,17 @@ function demoApi(action, data) {
     return wait({ id, total });
   }
   if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
-  if (action === 'list') return wait({ orders: (demoLoad() || demoOrders).map(o => ({ ...o })), open: demoOpen() });
-  if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
+  if (action === 'list') return wait({ orders: (demoLoad() || demoOrders).map(o => ({ ...o })), ...demoStatus() });
+  if (action === 'setOpen') {
+    demoOpen(data.open === true);
+    return wait({ ok: true, ...demoStatus() });
+  }
+  if (action === 'setHours') {
+    const bad = (data.hours || []).findIndex(h => h && h !== 'closed' && !demoDay(h));
+    if (bad >= 0) return fail(DAY_NAMES[bad].slice(0, 3) + ': pick an opening and a closing time that are different.');
+    demoHours(data.hours.map(h => h || 'closed'));
+    return wait({ ok: true, ...demoStatus() });
+  }
   if (action === 'saveMenu') {
     try {
       localStorage.setItem(DEMO_MENU_KEY, JSON.stringify(data.items));

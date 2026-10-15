@@ -54,6 +54,8 @@ Use whichever Google account should own the orders: yours if you run it for the 
      rows, here or later on the admin page's **Menu** tab (the seller can do it there too).
    - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
      `deliveryFee` is what delivery costs per order (default `1`; pickup is always free).
+     Opening hours are set on the admin page's **Hours** tab (they land here as `hoursSun` … `hoursSat`).
+     They use the Sheet's time zone: check **File → Settings → Time zone** is the school's.
      `telegramChatId` / `notifyEmail` say who gets a Telegram message / email per order (see step 3b).
    - **Orders**: new orders show up here. Don't change the headers.
 5. The admin code is **1234**. To change it: in Apps Script click the gear (**Project

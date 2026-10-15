@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=348530b42e">
+  <link rel="stylesheet" href="../assets/style.css?v=41287c7dd8">
   <style>:root { --accent: #A13D0B; --highlight: #FFB547; }</style>
 </head>
 <body class="shop">
@@ -22,13 +22,14 @@
           <span class="shop-name">Yitz&#39;s Grill</span>
         </h1>
         <p class="tagline">Crispy fried chicken and hot meat paninis.</p>
+        <p class="hours-today" id="hours-today" hidden></p>
         <a class="btn btn-primary btn-big" href="#order">Build your plate</a>
       </div>
 
       <figure class="hero-art">
         <span class="sticker sticker-hot">Hot off the grill</span>
         <span class="sticker sticker-price" id="from-price" hidden></span>
-        <span class="sticker sticker-soldout" aria-hidden="true">Sold<br>out</span>
+        <span class="sticker sticker-soldout" id="closed-sticker" aria-hidden="true">Sold<br>out</span>
         <img class="hero-img" src="grill.svg" alt="A crispy fried chicken drumstick next to a cold soda">
       </figure>
     </div>
@@ -38,7 +39,7 @@
 
   <section id="closed" class="panel panel-closed" hidden aria-labelledby="closed-title">
     <h2 id="closed-title">Sold out!</h2>
-    <p>We're not taking any more orders right now. Check back soon.</p>
+    <p id="closed-text">We're not taking any more orders right now. Check back soon.</p>
   </section>
 
   <main id="order" class="layout">
@@ -137,7 +138,7 @@
   </section>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=e12d6f16bf"></script>
-  <script src="../assets/shop.js?v=c2962c7ff9"></script>
+  <script src="../assets/api.js?v=8673f5585e"></script>
+  <script src="../assets/shop.js?v=f38e05f22c"></script>
 </body>
 </html>

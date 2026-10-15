@@ -6,6 +6,13 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ---
 
+## 2026-10-15
+
+### Added
+- Opening hours with auto-close: the seller sets each day's times (or closed) on a new admin **Hours** tab.
+  Outside them the shop says "Closed · opens …" and the Google script refuses orders. Today's hours show
+  under the shop name. No hours set = open as before. 14 new tests.
+
 ## 2026-10-13
 
 ### Added

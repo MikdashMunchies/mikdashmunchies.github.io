@@ -43,12 +43,13 @@ async function load() {
   $('board-error').textContent = '';
   try {
     const ticksAtStart = ticks;
-    const { orders, open } = await api('list', { password });
+    const { orders, ...status } = await api('list', { password });
     if (ticksAtStart !== ticks) return;
     sessionStorage.setItem(PASSWORD_KEY, password);
     if ($('board').hidden) loadMenu(); // once per login, never on auto-refresh: it would wipe edits in progress
     showBoard(true);
-    renderOpen(open);
+    renderOpen(status);
+    if (!hoursDirty) renderHours(status.hours);
     render(orders);
   } catch (err) {
     if (/password/i.test(err.message)) {
@@ -71,11 +72,15 @@ function showBoard(on) {
   if (on) $('login-error').textContent = '';
 }
 
-function renderOpen(open) {
+// `open` is the Close/Open button; `closedBy` says why buyers can't order ('switch', 'hours' or null).
+function renderOpen({ open, closedBy, nextOpen }) {
   shopOpen = open;
-  $('shop-status').dataset.open = open;
-  $('shop-state').textContent = open ? 'Open' : 'Sold out';
-  $('shop-hint').textContent = open ? 'Taking orders' : 'The site says sold out. No new orders.';
+  const when = whenText(nextOpen);
+  $('shop-status').dataset.open = !closedBy;
+  $('shop-state').textContent = closedBy === 'switch' ? 'Sold out' : closedBy === 'hours' ? 'Closed' : 'Open';
+  $('shop-hint').textContent = closedBy === 'switch' ? 'The site says sold out. No new orders.'
+    : closedBy === 'hours' ? 'Outside your hours. ' + (when ? 'Opens ' + when + '.' : 'No open days set.')
+    : 'Taking orders';
   $('toggle-open').textContent = open ? 'Close shop' : 'Open shop';
   $('toggle-open').className = open ? 'btn btn-dark' : 'btn btn-primary';
 }
@@ -85,7 +90,7 @@ $('toggle-open').addEventListener('click', async () => {
   b.disabled = true;
   $('board-error').textContent = '';
   try {
-    renderOpen((await api('setOpen', { password, open: !shopOpen })).open);
+    renderOpen(await api('setOpen', { password, open: !shopOpen }));
   } catch (err) {
     $('board-error').textContent = err.message;
   } finally {
@@ -108,8 +113,8 @@ function renderMaaser() {
   $('sales-all').textContent = 'of ' + money(all.sales);
 }
 
-// Orders | Analytics tabs (arrow keys move between them, as tabs should).
-const TABS = ['orders', 'menu', 'stats'];
+// Orders | Menu | Hours | Analytics tabs (arrow keys move between them, as tabs should).
+const TABS = ['orders', 'menu', 'hours', 'stats'];
 function showTab(name, focus) {
   TABS.forEach(t => {
     const on = t === name;
@@ -378,4 +383,72 @@ $('save-menu').addEventListener('click', async () => {
 });
 
 // Leaving with unsaved menu edits asks first (the browser's own "Leave site?" prompt).
-window.addEventListener('beforeunload', e => { if (menuDirty) e.preventDefault(); });
+window.addEventListener('beforeunload', e => { if (menuDirty || hoursDirty) e.preventDefault(); });
+
+// --- Hours tab ---------------------------------------------------------------
+// One row per day, Sunday first. Saved as "11:00-00:00" or "closed", like the Sheet's hoursSun ... hoursSat.
+// The Google script checks the times again and is what actually closes the shop.
+
+let hoursDirty = false;
+
+function renderHours(hours) {
+  $('hours-note').hidden = !!hours;
+  $('day-rows').replaceChildren(...DAY_NAMES.map((day, i) => {
+    // No hours yet: suggest 11 AM to midnight every day; nothing changes until Save.
+    const [from, to] = hours ? String(hours[i] || '').split('-') : ['11:00', '00:00'];
+    const isOpen = hours ? /:/.test(from || '') && !!to : true;
+    const row = el('div', 'day-row');
+    const box = Object.assign(el('input'), { type: 'checkbox', checked: isOpen });
+    const name = el('label', 'day-name');
+    name.append(box, ' ' + day);
+    const time = (value, label) => {
+      const t = Object.assign(el('input', 'day-time'), { type: 'time', value });
+      t.setAttribute('aria-label', day + ' ' + label);
+      return t;
+    };
+    const open = time(isOpen ? from : '11:00', 'opens');
+    const close = time(isOpen ? to : '00:00', 'closes');
+    const times = el('div', 'day-times');
+    times.append(open, el('span', 'day-to', 'to'), close);
+    const closedNote = el('span', 'day-closed', 'Closed');
+    const show = () => { times.hidden = !box.checked; closedNote.hidden = box.checked; };
+    show();
+    box.addEventListener('change', () => { show(); markHoursDirty(); });
+    [open, close].forEach(t => t.addEventListener('input', markHoursDirty));
+    row.append(name, times, closedNote);
+    return row;
+  }));
+  hoursDirty = false;
+}
+
+function setHoursStatus(text, isError) {
+  $('hours-status').textContent = text;
+  $('hours-status').classList.toggle('error', !!isError);
+}
+
+function markHoursDirty() {
+  hoursDirty = true;
+  setHoursStatus('Unsaved changes. Tap Save hours when you are done.');
+}
+
+$('save-hours').addEventListener('click', async () => {
+  const hours = [...document.querySelectorAll('.day-row')].map(r => {
+    const [box, open, close] = r.querySelectorAll('input');
+    return box.checked ? open.value + '-' + close.value : 'closed';
+  });
+  const bad = hours.findIndex(h => h !== 'closed' && (!/^\d\d:\d\d-\d\d:\d\d$/.test(h) || h.slice(0, 5) === h.slice(6)));
+  if (bad >= 0) return setHoursStatus(DAY_NAMES[bad] + ' needs an opening and a closing time that are different.', true);
+  const b = $('save-hours');
+  b.disabled = true;
+  setHoursStatus('Saving…');
+  try {
+    const status = await api('setHours', { password, hours });
+    renderOpen(status);
+    renderHours(status.hours);
+    setHoursStatus('Saved. Your shop follows these hours now.');
+  } catch (err) {
+    setHoursStatus(err.message, true);
+  } finally {
+    b.disabled = false;
+  }
+});

@@ -46,6 +46,7 @@
       <div class="tabs" role="tablist" aria-label="Admin views">
         <button type="button" role="tab" id="tab-orders" aria-controls="panel-orders" aria-selected="true">Orders</button>
         <button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" tabindex="-1">Menu</button>
+        <button type="button" role="tab" id="tab-hours" aria-controls="panel-hours" aria-selected="false" tabindex="-1">Hours</button>
         <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Analytics</button>
       </div>
       <p id="board-error" class="error" role="alert"></p>
@@ -88,6 +89,16 @@
         </section>
         <p class="menu-status" id="menu-status" role="status"></p>
         <button type="button" class="btn btn-primary btn-wide" id="save-menu">Save menu</button>
+      </div>
+      <div role="tabpanel" id="panel-hours" aria-labelledby="tab-hours" hidden>
+        <p class="menu-help">Pick the days and times you take orders. Outside them the site says <strong>Closed</strong> and shows when you open next. Closing at <strong>12:00 AM</strong> means midnight.</p>
+        <section class="stat-card" aria-labelledby="open-hours-title">
+          <h2 class="stat-card-title" id="open-hours-title">Opening hours</h2>
+          <p class="stat-card-lead" id="hours-note" hidden>No hours set yet: you're open whenever the shop is.</p>
+          <div class="day-rows" id="day-rows"></div>
+        </section>
+        <p class="menu-status" id="hours-status" role="status"></p>
+        <button type="button" class="btn btn-primary btn-wide" id="save-hours">Save hours</button>
       </div>
       <div role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
         <dl class="stat-tiles">
