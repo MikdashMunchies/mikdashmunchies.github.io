@@ -21,11 +21,15 @@ function fakeSheet(rows) {
       rows.push([...r].map(v => (typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v))); // [...r]: plain array, not the vm's
     },
     getLastRow: () => rows.length,
-    getRange: (row, col) => ({ setValue: v => { rows[row - 1][col - 1] = v; }, insertCheckboxes() {} }),
+    getRange: (row, col) => ({
+      getValue: () => (rows[row - 1] || [])[col - 1] ?? '',
+      setValue: v => { rows[row - 1][col - 1] = v; },
+      insertCheckboxes() { return this; },
+    }),
   };
 }
 
-function load({ open, deliveryFee, ntfyTopic, fetchFails } = {}) {
+function load({ open, deliveryFee, ntfyTopic, fetchFails, oldOrdersTab } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -41,22 +45,23 @@ function load({ open, deliveryFee, ntfyTopic, fetchFails } = {}) {
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
       ...(ntfyTopic === undefined ? [] : [['ntfyTopic', ntfyTopic]]),
     ]),
-    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled']]),
+    Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', ...(oldOrdersTab ? [] : ['Completed'])]]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass' };
   const pushes = [];
   const ctx = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); } }) },
-    UrlFetchApp: { fetch: (url, opts) => { if (fetchFails) throw new Error('ntfy is down'); pushes.push({ url, ...opts, body: JSON.parse(opts.payload) }); } },
+    UrlFetchApp: { fetch: (url, opts) => { if (fetchFails === true) throw new Error('ntfy is down'); pushes.push({ url, ...opts, body: JSON.parse(opts.payload) }); return { getResponseCode: () => (fetchFails === 'http' ? 400 : 200), getContentText: () => '' }; } },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ text: s, setMimeType() { return this; } }) },
   };
   vm.createContext(ctx);
   vm.runInContext(CODE, ctx);
+  const testNotify = () => ctx.testNotify();
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).text);
   const get = action => JSON.parse(ctx.doGet({ parameter: { action } }).text);
-  return { post, get, sheets, pushes };
+  return { post, get, sheets, pushes, testNotify };
 }
 
 const good = { action: 'order', name: 'Avi', delivery: true, room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
@@ -74,7 +79,7 @@ test('order is priced by the server, ignoring a tampered total', () => {
   const r = post({ ...good, total: 0.01 });
   assert.deepStrictEqual(r, { id: 1, total: 21 }); // (7.5 + 0.5 + 2) * 2, + $1 delivery once
   const row = sheets.Orders.rows[1];
-  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 21, '', false]);
+  assert.deepStrictEqual(row.slice(2), ['Avi', '204', 'Pastrami', 'Pickles, Extra meat', 2, 21, '', false, false]);
 });
 
 test('several mains go in one item and their prices add up', () => {
@@ -225,4 +230,52 @@ test('no push for an order that was refused', () => {
   const { post, pushes } = load({ ntfyTopic: 'abc', open: 'no' });
   assert.ok(post(good).error);
   assert.strictEqual(pushes.length, 0);
+});
+
+test('admin can mark an order completed and undo it, with the password only', () => {
+  const { post, sheets } = load();
+  post(good);
+  const pw = 'secret-pass';
+  assert.strictEqual(post({ action: 'list', password: pw }).orders[0].completed, false);
+  assert.ok(post({ action: 'update', password: 'nope', id: 1, completed: true }).error);
+  assert.deepStrictEqual(post({ action: 'update', password: pw, id: 1, completed: true }), { ok: true });
+  assert.strictEqual(sheets.Orders.rows[1][10], true);
+  assert.strictEqual(sheets.Orders.rows[1][9], false); // completed without being Zelled is allowed, Zelled untouched
+  const o = post({ action: 'list', password: pw }).orders[0];
+  assert.deepStrictEqual([o.zelled, o.completed], [false, true]);
+  post({ action: 'update', password: pw, id: 1, completed: false });
+  assert.strictEqual(sheets.Orders.rows[1][10], false);
+});
+
+test('ticking Zelled leaves Completed alone', () => {
+  const { post, sheets } = load();
+  post(good);
+  post({ action: 'update', password: 'secret-pass', id: 1, completed: true });
+  post({ action: 'update', password: 'secret-pass', id: 1, zelled: true });
+  assert.deepStrictEqual(sheets.Orders.rows[1].slice(9), [true, true]);
+});
+
+test('an update with nothing to change is refused', () => {
+  const { post } = load();
+  post(good);
+  assert.ok(post({ action: 'update', password: 'secret-pass', id: 1 }).error);
+});
+
+test('an older Orders tab gets the Completed header added; its old rows read as not completed', () => {
+  const { post, sheets } = load({ oldOrdersTab: true });
+  sheets.Orders.rows.push([1, new Date(), 'Old', '1', 'Turkey', '', 1, 7, '', true]); // a row from before the column existed
+  assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).orders[0].completed, false);
+  post({ ...good });
+  assert.strictEqual(sheets.Orders.rows[0][10], 'Completed');
+  post({ action: 'update', password: 'secret-pass', id: 1, completed: true });
+  assert.strictEqual(sheets.Orders.rows[1][10], true);
+});
+
+test('testNotify fails loudly when ntfy cannot be reached or refuses', () => {
+  assert.throws(() => load({ ntfyTopic: 'abc', fetchFails: true }).testNotify(), /FAILED/);
+  assert.throws(() => load({ ntfyTopic: 'abc', fetchFails: 'http' }).testNotify(), /FAILED/);
+  assert.throws(() => load().testNotify(), /ntfyTopic/);
+  const ok = load({ ntfyTopic: 'abc' });
+  ok.testNotify();
+  assert.strictEqual(ok.pushes.length, 1);
 });

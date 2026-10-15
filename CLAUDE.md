@@ -52,7 +52,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   Optional custom domain +$15/yr (costs about $12).
 - **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
-  in the Sheet's checkbox column). No other statuses (Ethan, 2026-10-12: just name, room, order, Zelled).
+  in the Sheet's checkbox column). Second checkbox **Completed** (Ethan, 2026-10-15): the seller ticks it once the
+  order is handed over; the row stays listed, faded and crossed out, and can be unticked. Independent of Zelled.
 - One item per order = one or more mains combined (turkey + pastrami; prices add up) + any extras, × quantity 1–10. No free-text "Other" (can't be priced); special requests go in the "Anything special?" note. Name ≤ 40, room ≤ 20, note ≤ 200 chars.
 - **Delivery or pickup** (Ethan, 2026-10-13): delivery adds a flat fee once per order (Settings `deliveryFee`, default $1) and needs a room; pickup is free and stores Room = "Pickup".
 - **No alcohol** on any menu: buyers are students at school (beer was dropped from Josh's list).
@@ -80,7 +81,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price),
-  `Settings` (Key/Value: zelleTo, open, deliveryFee, ntfyTopic), `Orders` (… Item, Extras, …, Zelled checkbox).
+  `Settings` (Key/Value: zelleTo, open, deliveryFee, ntfyTopic), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
+  header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
   list/update. The browser keeps it in `sessionStorage` only.
@@ -94,6 +96,9 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   in the editor BEFORE deploying a new version, or the live web app fails every request.
 - **Maaser box (admin):** 10% of **Zelled** order totals (incl. delivery fees), this month + all
   time, computed in the browser by `maaserOf()` in `api.js` from the `list` answer. No backend change.
+- **Admin tabs: Orders | Analytics.** Analytics = `analyticsOf()` in `api.js` from the same `list` answer:
+  orders, Zelled sales, average order, waiting for Zelle, today, last 7 days, orders by hour (bars in the
+  shop's `--accent`, only the hours that had orders, busiest labelled), top 5 best-selling mains. Viewer's local time.
 - **Admin auto-refresh:** every 15s and on tab focus; skipped while the tab is hidden or a tick is saving.
 - **Admin access:** same site, unlinked (`admin.html`, `noindex`). Hidden shortcut: tap the shop
   name 5 times within 1.5s (`shop.js`). The password is the real protection, not the hidden URL.
@@ -106,7 +111,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
-| POST | `{action:'update', password, id, zelled}` | password | Tick or untick Zelled on one order |
+| POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
 Errors come back as `{ error: "message" }` with HTTP 200.
@@ -129,7 +134,7 @@ Shops are at `http://localhost:5510/docs/<slug>/`.
 **QR code:** `python qr/make_qr.py <link> "<Shop name>" qr/<slug>.png` (needs `pip install --user "qrcode[pil]" opencv-python-headless`;
 the script scans its own output and fails if it doesn't decode to the link).
 **Test:** `node --test tests/build.test.js tests/code.test.js tests/api.test.js` (Node 24 wants file paths, not
-the folder). `code.test.js` runs `Code.gs` in `node:vm` with fake Google services; `api.test.js` runs `template/api.js` (maaser math);
+the folder). `code.test.js` runs `Code.gs` in `node:vm` with fake Google services; `api.test.js` runs `template/api.js` (maaser + analytics math);
 `build.test.js` checks the build and **fails if `docs/` is stale**.
 **Lint:** none.
 **Demo:** a shop with `"apiUrl": ""` uses its `demoMenu`; demo orders live in localStorage (`demoOrders:<slug>`) so shop and admin pages share them; admin code `1234`.
@@ -165,6 +170,8 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
 | 2026-10-15 | Order notifications via ntfy push, not SMS | Free, instant, any carrier, no signup; fits the $0 setup | Twilio SMS (~$1–2/mo + ~1¢/text + A2P business registration), email-to-text gateways (AT&T shut down 2025, others unreliable) |
+| 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
+| 2026-10-15 | Analytics computed in the browser from the `list` answer | No new backend action or Google permission; works in demo mode | A server-side stats action |
 | 2026-10-15 | Maaser = 10% of Zelled **sales**, shown on admin; no cost tracking | Ethan's choice; simplest; paid orders only | 10% of profit with a Costs tab (more accurate, more input); one cost box |
 | 2026-10-13 | Home page + README link table generated by `node build.js`; shared CSS/JS links fingerprinted (`?v=<sha1>`) | New shops appear everywhere automatically; GitHub Pages' ~10-min browser cache served stale styles after updates | Hand-maintained link lists (go stale); telling visitors to hard-refresh |
 | 2026-10-12 | Template: one repo, `shops/<slug>/shop.json` + shared `template/`, `node build.js` → `docs/` | Ethan: every shop works the same, only details differ; fix once → all shops update | A separate repo copy per shop (fixes copied by hand); runtime `?shop=` URLs (ugly links) |

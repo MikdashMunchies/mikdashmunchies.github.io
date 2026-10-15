@@ -43,29 +43,54 @@
         </div>
         <button type="button" class="btn" id="toggle-open">Close shop</button>
       </div>
-      <section class="maaser" aria-labelledby="maaser-title">
-        <h2 class="shop-status-label" id="maaser-title">Maaser · 10% of Zelled sales</h2>
-        <dl class="maaser-grid">
-          <div>
-            <dt>This month</dt>
-            <dd class="maaser-amount" id="maaser-month">$0.00</dd>
-            <dd class="maaser-sales" id="sales-month">of $0.00</dd>
-          </div>
-          <div>
-            <dt>All time</dt>
-            <dd class="maaser-amount" id="maaser-all">$0.00</dd>
-            <dd class="maaser-sales" id="sales-all">of $0.00</dd>
-          </div>
-        </dl>
-      </section>
+      <div class="tabs" role="tablist" aria-label="Admin views">
+        <button type="button" role="tab" id="tab-orders" aria-controls="panel-orders" aria-selected="true">Orders</button>
+        <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Analytics</button>
+      </div>
       <p id="board-error" class="error" role="alert"></p>
-      <div class="sheet-wrap">
-        <table class="sheet">
-          <thead>
-            <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Zelled</th></tr>
-          </thead>
-          <tbody id="orders"></tbody>
-        </table>
+      <div role="tabpanel" id="panel-orders" aria-labelledby="tab-orders">
+        <section class="maaser" aria-labelledby="maaser-title">
+          <h2 class="shop-status-label" id="maaser-title">Maaser · 10% of Zelled sales</h2>
+          <dl class="maaser-grid">
+            <div>
+              <dt>This month</dt>
+              <dd class="maaser-amount" id="maaser-month">$0.00</dd>
+              <dd class="maaser-sales" id="sales-month">of $0.00</dd>
+            </div>
+            <div>
+              <dt>All time</dt>
+              <dd class="maaser-amount" id="maaser-all">$0.00</dd>
+              <dd class="maaser-sales" id="sales-all">of $0.00</dd>
+            </div>
+          </dl>
+        </section>
+        <div class="sheet-wrap">
+          <table class="sheet">
+            <thead>
+              <tr><th scope="col">Name</th><th scope="col">Room</th><th scope="col">Order</th><th scope="col" class="col-check">Zelled</th><th scope="col" class="col-check">Done</th></tr>
+            </thead>
+            <tbody id="orders"></tbody>
+          </table>
+        </div>
+      </div>
+      <div role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
+        <dl class="stat-tiles">
+          <div class="stat"><dt>Orders</dt><dd id="stat-orders">0</dd></div>
+          <div class="stat"><dt>Sales (Zelled)</dt><dd id="stat-sales">$0.00</dd></div>
+          <div class="stat"><dt>Average order</dt><dd id="stat-average">$0.00</dd></div>
+          <div class="stat"><dt>Waiting for Zelle</dt><dd id="stat-unpaid">0</dd></div>
+          <div class="stat"><dt>Today</dt><dd id="stat-today">0</dd></div>
+          <div class="stat"><dt>Last 7 days</dt><dd id="stat-week">0</dd></div>
+        </dl>
+        <section class="stat-card" aria-labelledby="hours-title">
+          <h2 class="stat-card-title" id="hours-title">Orders by hour</h2>
+          <p class="stat-card-lead" id="hours-lead"></p>
+          <div class="hours" id="hours"></div>
+        </section>
+        <section class="stat-card" aria-labelledby="best-title">
+          <h2 class="stat-card-title" id="best-title">Best sellers</h2>
+          <ol class="best" id="best"></ol>
+        </section>
       </div>
     </section>
   </main>

@@ -575,7 +575,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .code-input { font: 600 1.6rem/1 var(--mono) !important; letter-spacing: 0.4em; text-align: center; }
 .order-actions { display: flex; align-items: center; gap: 10px; }
 
-/* Orders as a simple spreadsheet: Name · Room · Order · Zelled */
+/* Orders as a simple spreadsheet: Name · Room · Order · Zelled · Done */
 .sheet-wrap { border: var(--border); border-radius: var(--radius); box-shadow: var(--pop); overflow: hidden; background: var(--white); }
 .sheet { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 .sheet th {
@@ -604,6 +604,61 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
   cursor: pointer;
 }
 .sheet tr.is-zelled td { background: #EEF7F0; }
+/* Five columns on a phone: tighter cells so the Done column isn't cut off. */
+@media (max-width: 480px) {
+  .sheet th, .sheet td { padding: 10px 6px; }
+  .sheet th { letter-spacing: 0.04em; }
+  .col-check { width: 50px; }
+}
+/* Completed: still listed (and can be unticked), just out of the way. */
+.sheet tr.is-done td { opacity: .55; }
+.sheet tr.is-done .col-order > span:first-child,
+.sheet tr.is-done .col-name { text-decoration: line-through; text-decoration-thickness: 2px; }
+.sheet tr.is-done .col-check { opacity: 1; }
+
+/* Orders | Analytics */
+.tabs { display: flex; gap: 10px; margin-bottom: 22px; }
+.tabs [role='tab'] {
+  flex: 1;
+  min-height: 48px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: 800 1rem var(--sans);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.tabs [role='tab'][aria-selected='true'] { background: var(--ink); color: var(--white); }
+.tabs [role='tab']:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.stat-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0 0 22px; }
+@media (min-width: 640px) { .stat-tiles { grid-template-columns: repeat(3, 1fr); } }
+.stat { padding: 14px; border: var(--border); border-radius: var(--radius); background: var(--white); box-shadow: 3px 3px 0 var(--ink); }
+.stat dt { font: 600 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.stat dd { margin: 6px 0 0; font: 600 1.6rem/1.1 var(--mono); }
+
+.stat-card { margin-bottom: 22px; padding: 18px; border: var(--border); border-radius: var(--radius); background: var(--white); box-shadow: var(--pop); }
+.stat-card-title { font: 600 0.8rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); }
+.stat-card-lead { margin: 6px 0 14px; font-weight: 800; font-size: 1.1rem; }
+
+/* Orders by hour: one bar per hour, the shop's accent, the busiest one labelled. */
+.hours { display: flex; gap: 2px; height: 160px; }
+.hour { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hour-plot { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-bottom: 1.5px solid var(--line); }
+.hour-bar { width: 100%; max-width: 28px; background: var(--accent); border-radius: 4px 4px 0 0; }
+.hour-count { font: 600 0.8rem var(--mono); margin-bottom: 4px; }
+.hour-label { margin-top: 6px; text-align: center; font: 400 0.7rem var(--mono); color: var(--ink-soft); white-space: nowrap; }
+.hour.is-peak .hour-label { color: var(--ink); font-weight: 600; }
+
+.best { list-style: none; margin: 0; padding: 0; counter-reset: best; }
+.best li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 8px 0; border-top: 1.5px solid var(--line); }
+.best li:first-child { border-top: 0; }
+.best-name { font-weight: 800; }
+.best-name::before { counter-increment: best; content: counter(best) '. '; font-family: var(--mono); color: var(--ink-soft); }
+.best-count { font: 600 0.95rem var(--mono); }
+.best-bar { grid-column: 1 / -1; height: 6px; border-radius: 4px; background: var(--accent); }
+.best-empty { color: var(--ink-soft); }
 .empty { text-align: center; color: var(--ink-soft); padding: 48px 12px !important; }
 
 @media (prefers-reduced-motion: reduce) {

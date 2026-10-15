@@ -2,8 +2,9 @@
 // Deploy as a web app: Execute as "Me", access "Anyone". See SETUP.md.
 
 const MAX_QTY = 10;
-const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled'];
+const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', 'Completed'];
 const ZELLED_COL = 10;
+const COMPLETED_COL = 11;
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'menu') return json_(getMenu_());
@@ -20,7 +21,7 @@ function doPost(e) {
     }
     if (body.action === 'update') {
       checkPassword_(body.password);
-      return json_(updateOrder_(Number(body.id), body.zelled === true));
+      return json_(updateOrder_(Number(body.id), body));
     }
     if (body.action === 'setOpen') {
       checkPassword_(body.password);
@@ -122,14 +123,15 @@ function placeOrder_(body) {
     const props = PropertiesService.getScriptProperties();
     id = Number(props.getProperty('NEXT_ID') || 1);
     props.setProperty('NEXT_ID', id + 1);
-    const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
+    const sheet = ordersSheet_();
     sheet.appendRow([
       id, new Date(), order.name, order.room, order.mains.join(' + '), order.extras.join(', '),
-      order.qty, order.total, order.note, false,
+      order.qty, order.total, order.note, false, false,
     ].map(safeCell_));
-    // A real checkbox, so the seller can also tick "Zelled" right in the Sheet.
+    // Real checkboxes, so the seller can also tick "Zelled"/"Completed" right in the Sheet.
     // Added per row: pre-filling empty rows with checkboxes would make appendRow skip past them.
     sheet.getRange(sheet.getLastRow(), ZELLED_COL).insertCheckboxes();
+    sheet.getRange(sheet.getLastRow(), COMPLETED_COL).insertCheckboxes();
   } finally {
     lock.releaseLock();
   }
@@ -149,14 +151,17 @@ function notify_(topic, id, order) {
   if (order.note) lines.push('“' + order.note + '”');
   try {
     // JSON body, not ntfy's Title header: headers can't carry names like "José".
-    UrlFetchApp.fetch('https://ntfy.sh/', {
+    const res = UrlFetchApp.fetch('https://ntfy.sh/', {
       method: 'post',
       contentType: 'application/json; charset=utf-8',
       payload: JSON.stringify({ topic: topic.trim(), title: 'Order #' + id + ' · ' + order.name, message: lines.join('\n') }),
       muteHttpExceptions: true,
     });
+    if (res.getResponseCode() >= 300) throw new Error('ntfy answered ' + res.getResponseCode() + ': ' + res.getContentText());
+    return true;
   } catch (err) {
     console.error('ntfy failed: ' + err.message);
+    return false;
   }
 }
 
@@ -166,7 +171,9 @@ function notify_(topic, id, order) {
 function testNotify() {
   const topic = getMenu_().shop.ntfyTopic;
   if (!topic) throw new Error('Add an ntfyTopic row to the Settings tab first.');
-  notify_(topic, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
+  const sent = notify_(topic, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
+  if (!sent) throw new Error('Test notification FAILED (reason in the log above). If it says permission: remove the script at myaccount.google.com/connections, run again, tick every box.');
+  console.log('Test notification sent to ' + topic);
 }
 
 function listOrders_() {
@@ -174,16 +181,34 @@ function listOrders_() {
     id: r[0],
     time: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
     name: r[2], room: r[3], item: r[4], extras: r[5], qty: r[6], total: r[7], note: r[8],
-    zelled: r[9] === true || String(r[9]).toUpperCase() === 'TRUE',
+    zelled: ticked_(r[9]),
+    completed: ticked_(r[10]), // blank on rows from before the Completed column existed
   })).reverse();
 }
 
-function updateOrder_(id, zelled) {
+// A checkbox reads as true; a TRUE typed by hand can come back as the text "TRUE".
+function ticked_(v) {
+  return v === true || String(v).toUpperCase() === 'TRUE';
+}
+
+// Shops set up before the Completed column existed get its header on first use.
+function ordersSheet_() {
   const sheet = SpreadsheetApp.getActive().getSheetByName('Orders');
+  const header = sheet.getRange(1, COMPLETED_COL);
+  if (header.getValue() !== 'Completed') header.setValue('Completed');
+  return sheet;
+}
+
+// Changes only the boxes sent: { zelled: true } leaves Completed alone and the other way round.
+function updateOrder_(id, body) {
+  const changes = [[ZELLED_COL, body.zelled], [COMPLETED_COL, body.completed]].filter(([, v]) => typeof v === 'boolean');
+  if (!changes.length) throw new Error('Nothing to update.');
+  const sheet = ordersSheet_();
   const rows = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (Number(rows[i][0]) === id) {
-      sheet.getRange(i + 1, ZELLED_COL).setValue(zelled);
+      // insertCheckboxes: rows from before the Completed column have a plain cell there.
+      changes.forEach(([col, v]) => sheet.getRange(i + 1, col).insertCheckboxes().setValue(v));
       return { ok: true };
     }
   }
