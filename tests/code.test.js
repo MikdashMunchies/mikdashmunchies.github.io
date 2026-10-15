@@ -29,7 +29,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ open, deliveryFee, ntfyTopic, fetchFails, oldOrdersTab } = {}) {
+function load({ open, deliveryFee, chatIds, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -43,25 +43,37 @@ function load({ open, deliveryFee, ntfyTopic, fetchFails, oldOrdersTab } = {}) {
       ['zelleTo', '555-123-4567'],
       ...(open === undefined ? [] : [['open', open]]),
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
-      ...(ntfyTopic === undefined ? [] : [['ntfyTopic', ntfyTopic]]),
+      ...(chatIds === undefined ? [] : [['telegramChatId', chatIds]]),
     ]),
     Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', ...(oldOrdersTab ? [] : ['Completed'])]]),
   };
-  const props = { ADMIN_PASSWORD: 'secret-pass' };
-  const pushes = [];
+  const props = { ADMIN_PASSWORD: 'secret-pass', ...(token ? { TELEGRAM_TOKEN: token } : {}) };
+  const sent = [];
+  const logs = [];
   const ctx = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); } }) },
-    UrlFetchApp: { fetch: (url, opts) => { if (fetchFails === true) throw new Error('ntfy is down'); pushes.push({ url, ...opts, body: JSON.parse(opts.payload) }); return { getResponseCode: () => (fetchFails === 'http' ? 400 : 200), getContentText: () => '' }; } },
+    UrlFetchApp: {
+      fetch: (url, opts = {}) => {
+        // Like a real network error, the message names the URL, and so the token.
+        if (fetchFails === true) throw new Error('Address unavailable: ' + url);
+        const reply = body => ({ getResponseCode: () => (fetchFails === 'http' ? 400 : 200), getContentText: () => JSON.stringify(body) });
+        if (url.endsWith('/getUpdates')) return reply({ ok: true, result: updates });
+        sent.push({ url, ...opts, body: JSON.parse(opts.payload) });
+        return reply({ ok: fetchFails !== 'http' });
+      },
+    },
+    console: { log: m => logs.push(String(m)), error: m => logs.push(String(m)) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ text: s, setMimeType() { return this; } }) },
   };
   vm.createContext(ctx);
   vm.runInContext(CODE, ctx);
   const testNotify = () => ctx.testNotify();
+  const telegramChats = () => ctx.telegramChats();
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).text);
   const get = action => JSON.parse(ctx.doGet({ parameter: { action } }).text);
-  return { post, get, sheets, pushes, testNotify };
+  return { post, get, sheets, sent, logs, testNotify, telegramChats };
 }
 
 const good = { action: 'order', name: 'Avi', delivery: true, room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
@@ -197,39 +209,41 @@ test('a box ticked by hand in the Sheet reads as zelled', () => {
   assert.strictEqual(post({ action: 'list', password: 'secret-pass' }).orders[0].zelled, true);
 });
 
-test("a new order sends a push to the shop's ntfy topic", () => {
-  const { post, pushes } = load({ ntfyTopic: ' dmp-orders-k3x9 ' });
+test('a new order sends a Telegram message to every chat listed for the shop', () => {
+  const { post, sent } = load({ chatIds: ' 111, 222 ' });
   post({ ...good, note: 'no mustard' });
-  assert.strictEqual(pushes.length, 1);
-  assert.strictEqual(pushes[0].url, 'https://ntfy.sh/');
-  assert.strictEqual(pushes[0].body.topic, 'dmp-orders-k3x9');
-  assert.strictEqual(pushes[0].body.title, 'Order #1 · Avi');
-  assert.strictEqual(pushes[0].body.message, '2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
+  assert.deepStrictEqual(sent.map(m => m.body.chat_id), ['111', '222']);
+  assert.strictEqual(sent[0].url, 'https://api.telegram.org/botTOKEN123/sendMessage');
+  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
 });
 
-test('pickup orders say Pickup in the push', () => {
-  const { post, pushes } = load({ ntfyTopic: 'abc' });
+test('pickup orders say Pickup in the message', () => {
+  const { post, sent } = load({ chatIds: '111' });
   post({ ...good, delivery: false, extras: [], qty: 1 });
-  assert.strictEqual(pushes[0].body.message, '1 × Pastrami\nPickup · $7.50');
+  assert.strictEqual(sent[0].body.text, 'New order #1 · Avi\n1 × Pastrami\nPickup · $7.50');
 });
 
-test('no ntfy topic: no push, order still saved', () => {
-  const { post, pushes, sheets } = load();
-  assert.strictEqual(post(good).id, 1);
-  assert.strictEqual(pushes.length, 0);
-  assert.strictEqual(sheets.Orders.rows.length, 2);
+test('no chat id or no bot token: no message, order still saved', () => {
+  for (const opts of [{}, { chatIds: '111', token: null }]) {
+    const { post, sent, sheets } = load(opts);
+    assert.strictEqual(post(good).id, 1);
+    assert.strictEqual(sent.length, 0);
+    assert.strictEqual(sheets.Orders.rows.length, 2);
+  }
 });
 
-test('a failed push never loses the order', () => {
-  const { post, sheets } = load({ ntfyTopic: 'abc', fetchFails: true });
+test('a failed message never loses the order, and the bot token never reaches the log', () => {
+  const { post, sheets, logs } = load({ chatIds: '111', fetchFails: true });
   assert.deepStrictEqual(post(good), { id: 1, total: 21 });
   assert.strictEqual(sheets.Orders.rows.length, 2);
+  assert.ok(logs.some(l => /Telegram failed/.test(l)));
+  assert.ok(!logs.join('\n').includes('TOKEN123'));
 });
 
-test('no push for an order that was refused', () => {
-  const { post, pushes } = load({ ntfyTopic: 'abc', open: 'no' });
+test('no message for an order that was refused', () => {
+  const { post, sent } = load({ chatIds: '111', open: 'no' });
   assert.ok(post(good).error);
-  assert.strictEqual(pushes.length, 0);
+  assert.strictEqual(sent.length, 0);
 });
 
 test('admin can mark an order completed and undo it, with the password only', () => {
@@ -271,17 +285,28 @@ test('an older Orders tab gets the Completed header added; its old rows read as 
   assert.strictEqual(sheets.Orders.rows[1][10], true);
 });
 
-test('testNotify fails loudly when ntfy cannot be reached or refuses', () => {
-  assert.throws(() => load({ ntfyTopic: 'abc', fetchFails: true }).testNotify(), /FAILED/);
-  assert.throws(() => load({ ntfyTopic: 'abc', fetchFails: 'http' }).testNotify(), /FAILED/);
-  assert.throws(() => load().testNotify(), /ntfyTopic/);
-  const ok = load({ ntfyTopic: 'abc' });
+test('testNotify fails loudly when Telegram refuses or is not set up', () => {
+  assert.throws(() => load({ chatIds: '111', fetchFails: true }).testNotify(), /FAILED/);
+  assert.throws(() => load({ chatIds: '111', fetchFails: 'http' }).testNotify(), /FAILED/);
+  assert.throws(() => load({ chatIds: '111', token: null }).testNotify(), /TELEGRAM_TOKEN/);
+  assert.throws(() => load().testNotify(), /telegramChatId/);
+  const ok = load({ chatIds: '111' });
   ok.testNotify();
-  assert.strictEqual(ok.pushes.length, 1);
+  assert.strictEqual(ok.sent.length, 1);
 });
 
-test('the public menu never shows the ntfy topic (or any other private setting)', () => {
-  const { get, post } = load({ ntfyTopic: 'secret-topic' });
+test('telegramChats lists who pressed Start, once each', () => {
+  const msg = (id, first, username) => ({ message: { chat: { id, first_name: first, username } } });
+  const { telegramChats, logs } = load({ updates: [msg(111, 'David', 'dmp'), msg(111, 'David', 'dmp'), msg(222, 'Ethan')] });
+  telegramChats();
+  const out = logs.join('\n');
+  assert.match(out, /111.*David.*@dmp/);
+  assert.match(out, /222.*Ethan/);
+  assert.strictEqual(out.match(/111/g).length, 1);
+});
+
+test('the public menu never shows the Telegram chat ids (or any other private setting)', () => {
+  const { get, post } = load({ chatIds: 'secret-topic' });
   const m = get('menu');
   assert.deepStrictEqual(Object.keys(m.shop).sort(), ['deliveryFee', 'open', 'zelleTo']);
   assert.ok(!JSON.stringify(m).includes('secret-topic'));

@@ -55,8 +55,8 @@ function setup() {
     ['zelleTo', "CHANGE ME: the seller's Zelle phone or email"],
     ['open', 'yes'],
     ['deliveryFee', 1],
-    // The seller subscribes to this in the ntfy app to get a notification per order. Random = private.
-    ['ntfyTopic', 'orders-' + Utilities.getUuid().replace(/-/g, '').slice(0, 16)],
+    // Who gets a Telegram message per order: chat ids, comma-separated. Find them with telegramChats().
+    ['telegramChatId', ''],
   ]);
   make('Orders', [ORDER_HEADERS]);
   const props = PropertiesService.getScriptProperties();
@@ -85,7 +85,7 @@ function getMenu_() {
 }
 
 // The menu link is public: only the settings the website uses. Everything else in Settings
-// (like ntfyTopic, which would let anyone read the order notifications) stays private.
+// (like telegramChatId) stays private.
 function publicMenu_() {
   const menu = getMenu_();
   const { zelleTo, open, deliveryFee } = menu.shop;
@@ -143,45 +143,71 @@ function placeOrder_(body) {
   } finally {
     lock.releaseLock();
   }
-  notify_(menu.shop.ntfyTopic, id, order);
+  notify_(menu.shop.telegramChatId, id, order);
   return { id, total: order.total };
 }
 
-// Phone notification through the free ntfy app (ntfy.sh): the seller subscribes to the Settings
-// `ntfyTopic`. No topic = no notification. Anyone who knows the topic can read the notifications, so keep it random.
-// Never fails the order: it is already saved, and a missed notification is the smaller problem.
-function notify_(topic, id, order) {
-  if (!topic) return;
+// Order message on the seller's phone through Telegram. One bot for every shop: its token is the
+// Script Property TELEGRAM_TOKEN (a password: never in the Sheet or the code). Settings
+// telegramChatId says who gets this shop's orders (comma-separated). Missing either = no message.
+// Never fails the order: it is already saved, and a missed message is the smaller problem.
+// (ntfy.sh was tried first: its free per-address limit is shared by every Apps Script user, so it refused.)
+function notify_(chatIds, id, order) {
   const lines = [
+    'New order #' + id + ' · ' + order.name,
     order.qty + ' × ' + order.mains.join(' + ') + (order.extras.length ? ' + ' + order.extras.join(', ') : ''),
     (order.room === 'Pickup' ? 'Pickup' : 'Room ' + order.room) + ' · $' + order.total.toFixed(2),
   ];
   if (order.note) lines.push('“' + order.note + '”');
+  const ids = String(chatIds || '').split(',').map(c => c.trim()).filter(Boolean);
+  return ids.every(chat => telegram_('sendMessage', { chat_id: chat, text: lines.join('\n') }) !== null);
+}
+
+// One Telegram API call. Returns the answer, or null (and logs why) if it failed or there's no token.
+function telegram_(method, payload) {
+  const token = PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN');
+  if (!token) return null;
   try {
-    // JSON body, not ntfy's Title header: headers can't carry names like "José".
-    const res = UrlFetchApp.fetch('https://ntfy.sh/', {
+    const res = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/' + method, {
       method: 'post',
       contentType: 'application/json; charset=utf-8',
-      payload: JSON.stringify({ topic: topic.trim(), title: 'Order #' + id + ' · ' + order.name, message: lines.join('\n') }),
+      payload: JSON.stringify(payload || {}),
       muteHttpExceptions: true,
     });
-    if (res.getResponseCode() >= 300) throw new Error('ntfy answered ' + res.getResponseCode() + ': ' + res.getContentText());
-    return true;
+    if (res.getResponseCode() >= 300) throw new Error('Telegram answered ' + res.getResponseCode() + ': ' + res.getContentText());
+    return JSON.parse(res.getContentText());
   } catch (err) {
-    console.error('ntfy failed: ' + err.message);
-    return false;
+    // Network errors quote the URL, which contains the token: blank it out before logging.
+    console.error('Telegram failed: ' + err.message.split(token).join('<token>'));
+    return null;
   }
 }
 
-// Run once by hand from the Apps Script editor after adding `ntfyTopic` to Settings. It asks
-// Google's "Allow" for outside requests (needed before deploying, or the live shop breaks) and
-// sends a test notification.
+// Run by hand from the Apps Script editor after setting TELEGRAM_TOKEN and telegramChatId.
+// Sends a test message; the first time, Google asks to "connect to an external service": tick it.
 function testNotify() {
-  const topic = getMenu_().shop.ntfyTopic;
-  if (!topic) throw new Error('Add an ntfyTopic row to the Settings tab first.');
-  const sent = notify_(topic, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
-  if (!sent) throw new Error('Test notification FAILED (reason in the log above). If it says permission: remove the script at myaccount.google.com/connections, run again, tick every box.');
-  console.log('Test notification sent to ' + topic);
+  if (!PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN')) {
+    throw new Error('Add the bot token first: Project Settings (gear) > Script Properties > TELEGRAM_TOKEN.');
+  }
+  const chats = getMenu_().shop.telegramChatId;
+  if (!chats) throw new Error('Put a chat id in the Settings tab row telegramChatId first (run telegramChats to find it).');
+  const sent = notify_(chats, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
+  if (!sent) throw new Error('Test message FAILED (reason in the log above). Did that person press Start on the bot?');
+  console.log('Test message sent to ' + chats);
+}
+
+// Run by hand: lists everyone who pressed Start on the bot recently (Telegram keeps about a day),
+// so their chat id can be copied into Settings > telegramChatId.
+function telegramChats() {
+  const res = telegram_('getUpdates', {});
+  if (!res) throw new Error('Could not reach Telegram. Is TELEGRAM_TOKEN set? (See the log.)');
+  const seen = {};
+  res.result.forEach(u => {
+    const c = (u.message || u.my_chat_member || {}).chat;
+    if (c && !seen[c.id]) seen[c.id] = c.id + '  ' + [c.first_name, c.last_name].filter(Boolean).join(' ') + (c.username ? '  @' + c.username : '');
+  });
+  const list = Object.values(seen);
+  console.log(list.length ? 'Chat ids:\n' + list.join('\n') : 'Nobody yet: open the bot in Telegram, press Start, then run this again.');
 }
 
 function listOrders_() {

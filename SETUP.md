@@ -53,7 +53,7 @@ Use whichever Google account should own the orders: yours if you run it for the 
      (optional add-ons). Prices are plain numbers (`6.5`). Replace the example rows.
    - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
      `deliveryFee` is what delivery costs per order (default `1`; pickup is always free).
-     `ntfyTopic` is a random name for order notifications (see step 3b). Keep it secret.
+     `telegramChatId` says who gets a Telegram message per order (see step 3b).
    - **Orders**: new orders show up here. Don't change the headers.
 5. The admin code is **1234**. To change it: in Apps Script click the gear (**Project
    Settings**) → **Script Properties** → edit `ADMIN_PASSWORD` → **Save script properties**.
@@ -69,18 +69,28 @@ Use whichever Google account should own the orders: yours if you run it for the 
 Changed `Code.gs` later? **Deploy → Manage deployments → pencil → Version: New version → Deploy**.
 The URL stays the same. (A "New deployment" would give a new URL.)
 
-### 3b. Order notifications on the seller's phone (free, ntfy)
+### 3b. Order messages on the seller's phone (free, Telegram)
 
-1. The seller installs **ntfy** (App Store / Google Play), taps **+**, and subscribes to the
-   `ntfyTopic` from the Settings tab (server: the default, ntfy.sh).
-   Older Sheet without that row? Add one: `ntfyTopic` | a random name like `dmp-orders-7k2x9q4m`.
-2. In Apps Script, pick the function **`testNotify`** and click **Run**. The first time, Google
-   asks for permission to "connect to an external service": **Allow** (same steps as above).
-   The seller's phone should buzz with a test notification.
-3. **Do step 2 before deploying a new version** of a script that didn't have notifications yet.
-   Without that Allow, the live shop can't take orders at all.
+**Once for the whole business** (already done if any shop has it):
+1. In Telegram, message **@BotFather** → `/newbot` → name it (e.g. *MikdashMunchies Orders*) and pick a
+   username ending in `bot`. BotFather replies with a **token**: treat it like a password.
 
-No `ntfyTopic` row = no notifications; everything else works the same.
+**For each shop:**
+1. In Apps Script: gear (**Project Settings**) → **Script Properties** → **Add script property**:
+   `TELEGRAM_TOKEN` = the bot token → **Save script properties**. (Never put it in the Sheet or GitHub.)
+2. The seller (and you, if you want copies) opens the bot in Telegram (`t.me/<bot username>`) and taps **Start**.
+3. In Apps Script, pick **`telegramChats`** → **Run**. The log lists everyone who pressed Start, with their
+   chat id. The first run asks Google's permission to "connect to an external service": **tick every box**,
+   then **Allow**.
+4. In the Sheet's **Settings** tab, set `telegramChatId` to the chat id(s), comma-separated
+   (older Sheets: add the row).
+5. Pick **`testNotify`** → **Run**. Their phone should get "New order #0 · Test".
+6. Deploy a **New version** (step 3) so the live shop sends messages.
+
+No token or no `telegramChatId` = no messages; everything else works the same.
+
+If Google says "permission" in the log even after Allow: a box was left unticked. Remove the script at
+[myaccount.google.com/connections](https://myaccount.google.com/connections), run again, tick every box.
 
 ### 4. Publish
 
@@ -106,7 +116,7 @@ It prints `OK: scans to the right link` only after reading the code back. Print 
 2. Open the admin page, enter the code, tick **Zelled**. The box in the Sheet should tick too,
    and the **Maaser** box should go up by 10% of that order. Tick **Done**: the row fades and is
    crossed out. Open **Analytics**: the order shows in the counts.
-   The seller's phone should have buzzed with the order (if `ntfyTopic` is set).
+   The seller should get a Telegram message about the order (if step 3b is done).
 3. Tap **Close shop**: the shop page should say **Sold out!** Then **Open shop** again.
 
 ## Changing the core (affects every shop)
