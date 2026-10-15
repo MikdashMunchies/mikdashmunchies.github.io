@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body { margin: 0; }</style>
+<title>MikdashMunchies for Sellers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
+<style>
+  /* Layout: one narrow reading column; a sticker-style order ticket as the hero; features as two lists (buyer / seller). */
+  /* Same look as the shops themselves (deliberately light-only, like the shops). */
+  :root {
+    --ink: #1A1410;
+    --ink-soft: #5B4F47;
+    --paper: #FFFFFF;
+    --cream: #FFF5DE;
+    --tomato: #D2341B;
+    --mustard: #FFC233;
+    --pickle: #2E8B4E;
+    --line: #EDE6DC;
+    --display: 'Shrikhand', Georgia, serif;
+    --sans: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+    --border: 2.5px solid var(--ink);
+    --pop: 4px 4px 0 var(--ink);
+    --radius: 18px;
+    color-scheme: light;
+  }
+  html { background: var(--paper); }
+  body { background: var(--paper); color: var(--ink); font: 400 1.05rem/1.55 var(--sans); padding-inline: 20px; padding-block: 0 64px; }
+  .wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 56px; }
+  h1, h2, h3 { margin: 0; line-height: 1.05; text-wrap: balance; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 800; letter-spacing: -0.02em; }
+  h3 { font-size: 1.1rem; font-weight: 800; }
+  p { margin: 0; }
+  a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  a:focus-visible { outline: 3px solid var(--tomato); outline-offset: 3px; border-radius: 6px; }
+  .eyebrow { font: 600 0.78rem var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); }
+
+  /* Hero */
+  .hero { display: grid; gap: 28px; padding-top: 40px; grid-template-columns: 1.15fr 1fr; align-items: center; }
+  .hero h1 { font: 400 clamp(2.4rem, 7vw, 3.6rem)/1 var(--display); }
+  .hero h1 span { color: var(--tomato); }
+  .hero .lead { margin-top: 16px; font-size: 1.2rem; color: var(--ink-soft); max-width: 34ch; }
+  .hero-text { display: grid; gap: 4px; min-width: 0; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; border: var(--border); border-radius: 999px; box-shadow: var(--pop); font-weight: 800; text-decoration: none; background: var(--tomato); color: var(--paper); }
+  .btn.alt { background: var(--paper); color: var(--ink); }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+
+  /* The order ticket: what a buyer's order looks like to the seller */
+  .ticket { border: var(--border); border-radius: var(--radius); box-shadow: 6px 6px 0 var(--ink); background: var(--cream); padding: 18px; font: 400 0.92rem/1.5 var(--mono); rotate: 1.5deg; min-width: 0; }
+  .ticket-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; border-bottom: 2px dashed var(--ink-soft); padding-bottom: 10px; margin-bottom: 10px; }
+  .ticket-row { display: flex; justify-content: space-between; gap: 12px; }
+  .ticket-total { border-top: 2px dashed var(--ink-soft); margin-top: 10px; padding-top: 10px; font-weight: 600; font-size: 1.05rem; }
+  .ticks { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .tick { font: 600 0.75rem var(--mono); border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px; background: var(--paper); }
+  .tick.on { background: var(--pickle); color: var(--paper); border-color: var(--pickle); }
+
+  /* Feature lists */
+  .section-head { display: grid; gap: 8px; margin-bottom: 20px; }
+  .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .feature { border: var(--border); border-radius: var(--radius); background: var(--paper); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+  .feature p { color: var(--ink-soft); font-size: 0.98rem; }
+  .feature .tag { justify-self: start; font: 600 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; background: var(--mustard); border: 2px solid var(--ink); border-radius: 999px; padding: 2px 8px; }
+  .seller .feature { background: var(--cream); }
+
+  /* Steps: a real sequence, so numbered */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; }
+  .steps li::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 44px; height: 44px; border: var(--border); border-radius: 50%; background: var(--mustard); font: 400 1.3rem var(--display); }
+  .steps p { color: var(--ink-soft); }
+
+  /* Price */
+  .price { border: var(--border); border-radius: var(--radius); box-shadow: var(--pop); background: var(--ink); color: var(--paper); padding: 24px; display: grid; gap: 18px; }
+  .price .eyebrow { color: var(--mustard); }
+  .price-row { display: flex; flex-wrap: wrap; gap: 28px; }
+  .price-amt { font: 400 2.4rem/1 var(--display); color: var(--mustard); }
+  .price-amt small { font: 600 0.95rem var(--sans); color: var(--paper); margin-left: 4px; }
+  .price p { color: #E9E1D6; }
+
+  /* Live shops */
+  .shops { display: flex; flex-wrap: wrap; gap: 10px; }
+  .shops a { font-weight: 800; border: var(--border); border-radius: 999px; padding: 8px 16px; text-decoration: none; background: var(--paper); }
+  .shops a:hover { background: var(--mustard); }
+  .fine { font-size: 0.9rem; color: var(--ink-soft); }
+
+  @media (max-width: 640px) {
+    .hero { grid-template-columns: 1fr; padding-top: 28px; }
+    .features { grid-template-columns: 1fr; }
+    .ticket { rotate: 0deg; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">MikdashMunchies</p>
+      <h1>Your food stand, <span>online.</span></h1>
+      <p class="lead">A simple ordering website for students who sell food at school. Buyers order from their phone and pay you by Zelle or cash. You see every order in one place.</p>
+      <div class="cta">
+        <a class="btn" href="https://mikdashmunchies.github.io/">See the live shops</a>
+        <a class="btn alt" href="https://mikdashmunchies.github.io/davids-paninis/">Try an order</a>
+      </div>
+    </div>
+    <div class="ticket" aria-label="Example of an order as the seller sees it">
+      <div class="ticket-head"><span>Order #12</span><span>12:04 PM</span></div>
+      <div class="ticket-row"><span>Avi · Room 204</span></div>
+      <div class="ticket-row"><span>2 × Pastrami + Turkey</span><span>$26.00</span></div>
+      <div class="ticket-row"><span>+ Pickles</span><span>$1.00</span></div>
+      <div class="ticket-row"><span>Delivery</span><span>$1.00</span></div>
+      <div class="ticket-row"><span>“No mustard please”</span></div>
+      <div class="ticket-row ticket-total"><span>Total</span><span>$28.00</span></div>
+      <div class="ticks"><span class="tick on">✓ Paid</span><span class="tick">Done</span></div>
+    </div>
+  </header>
+
+  <section aria-labelledby="buyers">
+    <div class="section-head">
+      <p class="eyebrow">For your buyers</p>
+      <h2 id="buyers">Ordering takes under a minute</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><h3>Made for phones</h3><p>Big buttons, a running total pinned to the bottom of the screen. No app to download, just a link or a QR code.</p></div>
+      <div class="feature"><h3>Build the order</h3><p>Pick one or more mains (turkey + pastrami in one panini), add extras, choose 1 to 10. The price adds up as they tap.</p></div>
+      <div class="feature"><h3>Delivery or pickup</h3><p>Delivery to their room for a small fee you set (default $1), or free pickup.</p></div>
+      <div class="feature"><h3>Special requests</h3><p>An "Anything special?" note for things like "no mustard" or "extra cheese".</p></div>
+      <div class="feature"><h3>Pay by Zelle or cash</h3><p>Zelle: the site shows your number and the exact amount. Cash: they pay when they get their food. You can turn cash off anytime. No card fees.</p></div>
+      <div class="feature"><h3>"Sold out" when you are</h3><p>Close the shop and the site says Sold out right away. Nobody can order, or pay, after you close.</p></div>
+    </div>
+  </section>
+
+  <section class="seller" aria-labelledby="sellers">
+    <div class="section-head">
+      <p class="eyebrow">For you, the seller</p>
+      <h2 id="sellers">Run it all from your phone</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><h3>All your orders in one list</h3><p>Name, room, what they ordered, any note, and the time. New orders show up by themselves every 15 seconds.</p></div>
+      <div class="feature"><h3>Paid ✓ and Done ✓</h3><p>Each order says Cash or Zelle. Tick Paid once you have the money. Tick Done when the food is handed over; the order fades out but stays listed.</p></div>
+      <div class="feature"><span class="tag">New</span><h3>Order alerts</h3><p>Get a Telegram message or an email the moment someone orders: who, what, which room, how much.</p></div>
+      <div class="feature"><span class="tag">New</span><h3>Analytics</h3><p>Orders today and this week, sales, average order, your busiest hour, and your best sellers.</p></div>
+      <div class="feature"><span class="tag">New</span><h3>Maaser calculator</h3><p>10% of your paid sales, this month and all time, worked out for you automatically.</p></div>
+      <div class="feature"><h3>Sold out, item by item</h3><p>Out of crepes? Mark just that item sold out. Or close the whole shop with one button and open it again tomorrow.</p></div>
+      <div class="feature"><span class="tag">New</span><h3>Edit your menu from the admin page</h3><p>Change names and prices, add new items and extras, or remove one. Buyers see it the moment you save.</p></div>
+      <div class="feature"><span class="tag">New</span><h3>Discounts</h3><p>Tap Discount next to any item and type the sale price. Buyers see the old price crossed out and a Sale sticker.</p></div>
+      <div class="feature"><h3>Your data, your Sheet</h3><p>Every order and your menu are saved to your own Google Sheet, so you always have a full record.</p></div>
+      <div class="feature"><h3>Prices can't be faked</h3><p>Totals are checked against your menu on the server, so nobody can change the price in their browser.</p></div>
+      <div class="feature"><h3>Your own look</h3><p>Your shop name, colors, picture and words. Your own link, plus a printable QR code.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="start">
+    <div class="section-head">
+      <p class="eyebrow">Getting started</p>
+      <h2 id="start">Live in about a day</h2>
+    </div>
+    <ol class="steps">
+      <li><div><h3>Tell us your menu</h3><p>Your items and prices, your Zelle number, and whether you deliver.</p></div></li>
+      <li><div><h3>We build your shop</h3><p>Your own page at mikdashmunchies.github.io/your-shop, plus a QR code to print or post.</p></div></li>
+      <li><div><h3>Share the link and start selling</h3><p>Orders show up on your phone. You tick them off as you go.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="price" aria-labelledby="pricing">
+    <p class="eyebrow">Pricing</p>
+    <h2 id="pricing">Simple, and no fees per order</h2>
+    <div class="price-row">
+      <p class="price-amt">$20<small>one-time setup</small></p>
+      <p class="price-amt">$10<small>per month</small></p>
+    </div>
+    <p>Want your own web address (like davidspaninis.com)? Add it for $15 a year.</p>
+  </section>
+
+  <section aria-labelledby="live">
+    <div class="section-head">
+      <p class="eyebrow">See it working</p>
+      <h2 id="live">Shops running now</h2>
+    </div>
+    <div class="shops">
+      <a href="https://mikdashmunchies.github.io/davids-paninis/">David's Meat Paninis</a>
+      <a href="https://mikdashmunchies.github.io/elis-kitchen/">Eli's Kitchen</a>
+      <a href="https://mikdashmunchies.github.io/henrys-bakery/">Henry's Bakery</a>
+      <a href="https://mikdashmunchies.github.io/yitzs-grill/">Yitz's Grill</a>
+      <a href="https://mikdashmunchies.github.io/joshs-hot-dogs/">Josh's Hot Dog Stand</a>
+    </div>
+    <p class="fine" style="margin-top:16px">Some shops are still in demo mode: you can try ordering, nothing is sent.</p>
+  </section>
+</main>
+</body>
+</html>
