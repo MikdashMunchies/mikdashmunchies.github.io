@@ -21,17 +21,28 @@ function fakeSheet(rows) {
       rows.push([...r].map(v => (typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v))); // [...r]: plain array, not the vm's
     },
     getLastRow: () => rows.length,
-    getRange: (row, col) => ({
+    getRange: (row, col, numRows = 1, numCols = 1) => ({
       getValue: () => (rows[row - 1] || [])[col - 1] ?? '',
       setValue: v => { rows[row - 1][col - 1] = v; },
+      setValues: values => {
+        raw.push(...values.map(r => [...r]));
+        values.forEach((r, i) => {
+          rows[row - 1 + i] = rows[row - 1 + i] || [];
+          r.forEach((v, j) => { rows[row - 1 + i][col - 1 + j] = typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v; });
+        });
+      },
+      clearContent: () => {
+        for (let i = row - 1; i < row - 1 + numRows && i < rows.length; i++) for (let j = col - 1; j < col - 1 + numCols; j++) rows[i][j] = '';
+        while (rows.length > 1 && rows[rows.length - 1].every(v => v === '' || v === undefined)) rows.pop(); // like Sheets' data range
+      },
       insertCheckboxes() { return this; },
     }),
   };
 }
 
-function load({ open, deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
+function load({ menuRows, open, deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
   const sheets = {
-    Menu: fakeSheet([
+    Menu: fakeSheet(menuRows || [
       ['Type', 'Name', 'Price'],
       ['main', 'Turkey', 6],
       ['main', 'Pastrami', 7.5],
@@ -352,4 +363,74 @@ test('testNotify works with email only, and fails loudly when the email fails', 
 test('the public menu never shows notifyEmail', () => {
   const { get } = load({ emails: 'eli@example.com' });
   assert.ok(!JSON.stringify(get('menu')).includes('eli@example.com'));
+});
+
+const PW = 'secret-pass';
+const item = (type, name, price, sale = '') => ({ type, name, price, sale });
+
+test('a sale price is what the menu shows and what the order is charged; the regular price is kept as "was"', () => {
+  const { get, post } = load({ menuRows: [
+    ['Type', 'Name', 'Price', 'Sale price'],
+    ['main', 'Turkey', 6, ''],
+    ['main', 'Pastrami', 7.5, 5.5],
+    ['extra', 'Pickles', 0.5, ''],
+  ] });
+  const m = get('menu');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(m.mains)), [{ name: 'Turkey', price: 6 }, { name: 'Pastrami', price: 5.5, was: 7.5 }]);
+  assert.strictEqual(post({ ...good, extras: ['Pickles'], qty: 2 }).total, 13); // (5.5 + 0.5) * 2 + $1 delivery
+});
+
+test('a sale price that is not lower than the price is ignored', () => {
+  const { get } = load({ menuRows: [['Type', 'Name', 'Price', 'Sale price'], ['main', 'Turkey', 6, 6], ['main', 'Ham', 5, 'abc']] });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(get('menu').mains)), [{ name: 'Turkey', price: 6 }, { name: 'Ham', price: 5 }]);
+});
+
+test('admin saves the whole menu: names, prices, sale prices, new and removed items', () => {
+  const { post, get, sheets } = load(); // old 3-column Menu tab: the Sale price header gets added
+  const r = post({ action: 'saveMenu', password: PW, items: [
+    item('main', ' Turkey ', 6.5), item('main', 'Roast beef', 8, 6.75), item('extra', '=HACK()', 1),
+  ] });
+  assert.deepStrictEqual(r, { ok: true });
+  assert.deepStrictEqual(sheets.Menu.rows, [
+    ['Type', 'Name', 'Price', 'Sale price'],
+    ['main', 'Turkey', 6.5, ''],
+    ['main', 'Roast beef', 8, 6.75],
+    ['extra', '=HACK()', 1, ''],
+  ]);
+  assert.ok(sheets.Menu.raw.some(row => row[1] === "'=HACK()"), 'names are written as plain text, never formulas');
+  const m = get('menu');
+  assert.deepStrictEqual(m.mains.map(x => [x.name, x.price, x.was]), [['Turkey', 6.5, undefined], ['Roast beef', 6.75, 8]]);
+  assert.ok(!m.mains.some(x => x.name === 'Pastrami')); // removed
+});
+
+test('saving the menu needs the password', () => {
+  const { post, sheets } = load();
+  const before = JSON.stringify(sheets.Menu.rows);
+  assert.match(post({ action: 'saveMenu', password: 'nope', items: [item('main', 'Free', 0)] }).error, /password/i);
+  assert.strictEqual(JSON.stringify(sheets.Menu.rows), before);
+});
+
+test('a bad menu is refused and nothing is changed', () => {
+  const bad = [
+    [[], /at least one/i],
+    [[item('extra', 'Pickles', 1)], /at least one/i],
+    [[item('main', '', 5)], /name/i],
+    [[item('main', 'A'.repeat(41), 5)], /name/i],
+    [[item('main', 'Turkey', 5), item('main', 'turkey', 6)], /twice/i],
+    [[item('main', 'Turkey', -1)], /price/i],
+    [[item('main', 'Turkey', 1000)], /price/i],
+    [[item('main', 'Turkey', 'abc')], /price/i],
+    [[item('main', 'Turkey', 5, 5)], /lower/i],
+    [[item('main', 'Turkey', 5, -1)], /sale/i],
+    [[item('soup', 'Turkey', 5)], /type/i],
+    ['not a list', /at least one/i],
+    [Array.from({ length: 61 }, (_, i) => item('main', 'Item ' + i, 1)), /60/],
+  ];
+  for (const [items, message] of bad) {
+    const { post, sheets } = load();
+    const before = JSON.stringify(sheets.Menu.rows);
+    const r = post({ action: 'saveMenu', password: PW, items });
+    assert.match(r.error || '', message, JSON.stringify(items).slice(0, 80));
+    assert.strictEqual(JSON.stringify(sheets.Menu.rows), before);
+  }
 });
