@@ -48,7 +48,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 
 ## Business Rules
 
-- **What Ethan charges sellers:** $10 one-time setup + $15/month (set by Ethan 2026-10-11).
+- **What Ethan charges sellers:** $20 one-time setup + $10/month (Ethan, 2026-10-15; was $10 + $15/month).
   Optional custom domain +$15/yr (costs about $12).
 - **Payment is Zelle only, and self-reported.** Zelle has no API, so every order starts
   un-ticked; the seller ticks **Zelled** after checking their bank (on the admin page or right
