@@ -36,6 +36,8 @@
   - **Photos + split hours (on `main` 2026-10-16): Eli's deployed** (Ethan, 2026-10-16; live menu checked OK, but
     old vs new can't be told apart until a photo is saved). **David's not yet:** his admin Menu tab shows Add photo /
     Description but the old script **drops them on Save**, and a split-hours day is refused. Deploy there too.
+  - **Eli asked for the split hours** (open about 8:15–9:00 and 1:00–4:00, closed in between). Exact days/times
+    still to come from Ethan; then enter them on Eli's admin Hours tab and check his live menu's `hours`/`open`.
 - **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
   script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
   empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
