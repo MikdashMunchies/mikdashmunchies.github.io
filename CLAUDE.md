@@ -81,7 +81,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price),
-  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
+  `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
   header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
 - **Auth:** admin password = Script Property `ADMIN_PASSWORD`, checked server-side on every
@@ -90,7 +90,9 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   sets it. When closed the site shows "Sold out!" and the server refuses orders. The site re-checks
   before showing Zelle details so nobody pays after closing.
 - **No emails** (Ethan, 2026-10-12: not needed). The admin page is where orders are seen.
-- **Order notifications: Telegram.** One bot for the business; its token is Script Property
+- **Order notifications: Telegram and/or email** (Settings `notifyEmail`, comma-separated; `MailApp`, one
+  email to all addresses; shares the deploying account's ~100 recipients/day Gmail quota across ALL shops;
+  a failed email is logged and never fails the order or blocks Telegram). Telegram: one bot for the business; its token is Script Property
   `TELEGRAM_TOKEN` in each shop's script (secret: never in the Sheet/repo). Settings `telegramChatId` =
   comma-separated chat ids that get each order. `notify_()` → `telegram_('sendMessage')` after saving; no
   token/chat = no message; a failed send is logged (token blanked out) and never fails the order. Editor
@@ -110,7 +112,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| GET | `?action=menu` | none | Menu + only the public settings `zelleTo`, `open`, `deliveryFee` (`publicMenu_()`; never `telegramChatId` or anything else) |
+| GET | `?action=menu` | none | Menu + only the public settings `zelleTo`, `open`, `deliveryFee` (`publicMenu_()`; never `telegramChatId`, `notifyEmail` or anything else) |
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
@@ -172,6 +174,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
+| 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |
 | 2026-10-15 | Order notifications via a Telegram bot | Free, reliable from Apps Script, any phone | ntfy.sh push (**tried and shipped first, superseded same day**: its free limit is per IP and all Apps Script shares Google's IPs → 429 "daily quota reached"); paid ntfy (~$5/mo); Gmail email (one ~100/day quota shared by every shop under Ethan's account); Twilio SMS (~$1–2/mo + ~1¢/text + A2P registration); email-to-text (AT&T shut down 2025) |
 | 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
 | 2026-10-15 | Analytics computed in the browser from the `list` answer | No new backend action or Google permission; works in demo mode | A server-side stats action |

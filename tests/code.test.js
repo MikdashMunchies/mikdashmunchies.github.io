@@ -29,7 +29,7 @@ function fakeSheet(rows) {
   };
 }
 
-function load({ open, deliveryFee, chatIds, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
+function load({ open, deliveryFee, chatIds, emails, mailFails, token = 'TOKEN123', fetchFails, oldOrdersTab, updates = [] } = {}) {
   const sheets = {
     Menu: fakeSheet([
       ['Type', 'Name', 'Price'],
@@ -44,11 +44,13 @@ function load({ open, deliveryFee, chatIds, token = 'TOKEN123', fetchFails, oldO
       ...(open === undefined ? [] : [['open', open]]),
       ...(deliveryFee === undefined ? [] : [['deliveryFee', deliveryFee]]),
       ...(chatIds === undefined ? [] : [['telegramChatId', chatIds]]),
+      ...(emails === undefined ? [] : [['notifyEmail', emails]]),
     ]),
     Orders: fakeSheet([['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', ...(oldOrdersTab ? [] : ['Completed'])]]),
   };
   const props = { ADMIN_PASSWORD: 'secret-pass', ...(token ? { TELEGRAM_TOKEN: token } : {}) };
   const sent = [];
+  const mails = [];
   const logs = [];
   const ctx = {
     SpreadsheetApp: { getActive: () => ({ getSheetByName: n => sheets[n] }) },
@@ -63,6 +65,7 @@ function load({ open, deliveryFee, chatIds, token = 'TOKEN123', fetchFails, oldO
         return reply({ ok: fetchFails !== 'http' });
       },
     },
+    MailApp: { sendEmail: m => { if (mailFails) throw new Error('Service invoked too many times for one day: email.'); mails.push({ ...m }); } },
     console: { log: m => logs.push(String(m)), error: m => logs.push(String(m)) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ text: s, setMimeType() { return this; } }) },
@@ -73,7 +76,7 @@ function load({ open, deliveryFee, chatIds, token = 'TOKEN123', fetchFails, oldO
   const telegramChats = () => ctx.telegramChats();
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).text);
   const get = action => JSON.parse(ctx.doGet({ parameter: { action } }).text);
-  return { post, get, sheets, sent, logs, testNotify, telegramChats };
+  return { post, get, sheets, sent, mails, logs, testNotify, telegramChats };
 }
 
 const good = { action: 'order', name: 'Avi', delivery: true, room: '204', mains: ['Pastrami'], extras: ['Pickles', 'Extra meat'], qty: 2 };
@@ -311,4 +314,42 @@ test('the public menu never shows the Telegram chat ids (or any other private se
   assert.deepStrictEqual(Object.keys(m.shop).sort(), ['deliveryFee', 'open', 'zelleTo']);
   assert.ok(!JSON.stringify(m).includes('secret-topic'));
   assert.ok(!JSON.stringify(post({ action: 'list', password: 'secret-pass' })).includes('secret-topic'));
+});
+
+test('a new order emails every address in notifyEmail, in one email', () => {
+  const { post, mails } = load({ emails: ' eli@example.com, ethan@example.com ,not-an-email' });
+  post({ ...good, note: 'no mustard' });
+  assert.strictEqual(mails.length, 1);
+  assert.strictEqual(mails[0].to, 'eli@example.com,ethan@example.com');
+  assert.strictEqual(mails[0].subject, 'New order #1 · Avi');
+  assert.strictEqual(mails[0].body, '2 × Pastrami + Pickles, Extra meat\nRoom 204 · $21.00\n“no mustard”');
+});
+
+test('email and Telegram both go out when both are set; neither set sends nothing', () => {
+  const both = load({ emails: 'eli@example.com', chatIds: '111' });
+  both.post(good);
+  assert.deepStrictEqual([both.mails.length, both.sent.length], [1, 1]);
+  const none = load();
+  none.post(good);
+  assert.deepStrictEqual([none.mails.length, none.sent.length], [0, 0]);
+});
+
+test('a failed email (e.g. daily quota) never loses the order and still lets Telegram go', () => {
+  const { post, sheets, sent, logs } = load({ emails: 'eli@example.com', chatIds: '111', mailFails: true });
+  assert.deepStrictEqual(post(good), { id: 1, total: 21 });
+  assert.strictEqual(sheets.Orders.rows.length, 2);
+  assert.strictEqual(sent.length, 1);
+  assert.ok(logs.some(l => /Email failed/.test(l)));
+});
+
+test('testNotify works with email only, and fails loudly when the email fails', () => {
+  const ok = load({ emails: 'eli@example.com', token: null });
+  ok.testNotify();
+  assert.strictEqual(ok.mails.length, 1);
+  assert.throws(() => load({ emails: 'eli@example.com', mailFails: true }).testNotify(), /FAILED/);
+});
+
+test('the public menu never shows notifyEmail', () => {
+  const { get } = load({ emails: 'eli@example.com' });
+  assert.ok(!JSON.stringify(get('menu')).includes('eli@example.com'));
 });
