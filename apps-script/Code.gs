@@ -16,7 +16,8 @@ const MAX_PICTURE = 45000;
 const PICTURE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
 const MAX_DESCRIPTION = 120;
 const MAX_MENU_ITEMS = 60;
-// Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00".
+// Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00", or several
+// times with breaks in between: "08:15-09:00, 13:00-16:00".
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function doGet(e) {
@@ -166,17 +167,21 @@ function toMinutes_(t) {
   return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
-// One day's hours, "11:00-00:00" -> { from: 660, to: 1440 }. Closing at 00:00 means midnight; closing
-// before opening (18:00-01:00) runs past midnight. Blank, "closed" or anything unreadable = closed.
+// One day's hours -> its open times, earliest first: "11:00-00:00" -> [{ from: 660, to: 1440 }];
+// "08:15-09:00, 13:00-16:00" -> two, closed in between. Closing at 00:00 means midnight; closing before
+// opening (18:00-01:00) runs past midnight. Blank, "closed" or any unreadable part = [] (closed all day).
 function dayHours_(text) {
-  const parts = String(text || '').split('-');
-  if (parts.length !== 2) return null;
-  const from = toMinutes_(parts[0]);
-  let to = toMinutes_(parts[1]);
-  if (from === null || to === null) return null;
-  if (to === 0) to = 1440; // 00:00-00:00 = open all day (any other 00:00 close works either way)
-  if (to === from) return null;
-  return { from, to: to < from ? to + 1440 : to };
+  const ranges = String(text || '').split(',').map(range => {
+    const parts = range.split('-');
+    if (parts.length !== 2) return null;
+    const from = toMinutes_(parts[0]);
+    let to = toMinutes_(parts[1]);
+    if (from === null || to === null) return null;
+    if (to === 0) to = 1440; // 00:00-00:00 = open all day (any other 00:00 close works either way)
+    if (to === from) return null;
+    return { from, to: to < from ? to + 1440 : to };
+  });
+  return ranges.every(Boolean) ? ranges.sort((a, b) => a.from - b.from) : [];
 }
 
 // Is the shop inside its hours at `day` (0 = Sunday) and `minute` (after midnight), and when does it
@@ -186,11 +191,11 @@ function hoursNow_(hours, day, minute) {
   const at = d => dayHours_(hours[(d + 7) % 7]);
   const today = at(day);
   const yesterday = at(day - 1);
-  const open = !!(today && minute >= today.from && minute < today.to) || !!(yesterday && minute + 1440 < yesterday.to);
+  const open = today.some(h => minute >= h.from && minute < h.to) || yesterday.some(h => minute + 1440 < h.to);
   let next = null;
   for (let i = 0; i < 8 && !next; i++) {
-    const h = at(day + i);
-    if (h && (i > 0 || h.from > minute)) {
+    const h = at(day + i).find(r => i > 0 || r.from > minute); // later today counts (after a break)
+    if (h) {
       next = { day: (day + i) % 7, inDays: i, time: String(Math.floor(h.from / 60)).padStart(2, '0') + ':' + String(h.from % 60).padStart(2, '0') };
     }
   }
@@ -386,14 +391,14 @@ function setOpen_(open) {
   return { ok: true, ...status_(getMenu_().shop) };
 }
 
-// The admin page's Hours tab sends 7 days, Sunday first: "" (closed) or "11:00-00:00".
+// The admin page's Hours tab sends 7 days, Sunday first: "" (closed), "11:00-00:00" or "08:15-09:00, 13:00-16:00".
 // All 7 are checked before anything is written.
 function setHours_(hours) {
   if (!Array.isArray(hours) || hours.length !== 7) throw new Error('Send hours for all 7 days.');
   const values = hours.map((h, i) => {
     const text = String(h == null ? '' : h).trim();
     if (text === '' || text.toLowerCase() === 'closed') return 'closed';
-    if (!dayHours_(text)) throw new Error(DAYS[i] + ': pick an opening and a closing time that are different.');
+    if (text.length > 200 || !dayHours_(text).length) throw new Error(DAYS[i] + ': every time needs an opening and a closing time that are different.');
     return text;
   });
   values.forEach((v, i) => setSetting_('hours' + DAYS[i], v));

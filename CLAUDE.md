@@ -33,6 +33,9 @@
     his shop hides the cash choice (old script sends no `cash`), but his admin page wrongly shows "Cash: Accepted"
     and the switch errors ("Unknown action"). Deploy the latest `Code.gs` to fix.
   - Neither shop has hours set (= open per the switch). Neither has Telegram (no bot yet) or `notifyEmail` filled.
+  - **Neither script has photos or split hours yet** (both on `main` 2026-10-16). Until `Code.gs` is deployed, the
+    admin Menu tab shows Add photo / Description but an old script **drops them on Save**, and a split-hours day
+    ("08:15-09:00, 13:00-16:00") is refused. Deploy the latest `Code.gs` to both before telling sellers.
 - **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
   script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
   empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
@@ -123,8 +126,9 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Open / sold out:** Settings `open` (`yes`/`no`; missing = open). Admin's Close shop button
   sets it. When closed the site shows "Sold out!" and the server refuses orders. The site re-checks
   before showing Zelle details so nobody pays after closing.
-- **Opening hours / auto-close** (Ethan, 2026-10-15): Settings `hoursSun`…`hoursSat` = `"11:00-00:00"` or
-  `closed` (stored as text via `safeCell_`). No hours rows at all = always open (old behaviour). Close `00:00`
+- **Opening hours / auto-close** (Ethan, 2026-10-15): Settings `hoursSun`…`hoursSat` = `"11:00-00:00"`,
+  several times with breaks `"08:15-09:00, 13:00-16:00"` (Ethan, 2026-10-16: closed in between; any order; one
+  bad part = whole day closed; admin "+ Add another time"), or `closed` (stored as text via `safeCell_`). No hours rows at all = always open (old behaviour). Close `00:00`
   = midnight; close before open runs past midnight; `00:00-00:00` = all day; unreadable = closed.
   `hoursNow_()` uses the **Sheet's time zone** (`getSpreadsheetTimeZone()`, `formatDate(...,'u HH:mm')`).
   Buyers can order only if the switch is on AND it's inside the hours (`shop.open`); `closedBy` =
@@ -163,7 +167,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` (the switch), `closedBy`, `hours`, `today`, `nextOpen` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop → same status fields |
 | POST | `{action:'setCash', password, cash}` | password | Turn cash payments on or off → same status fields (incl. `cash`) |
-| POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
+| POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" (comma-separated for breaks) or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
 | POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut,image,desc}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price, image = jpeg/png/webp data URL ≤45,000 chars or "", desc ≤120) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 
@@ -233,6 +237,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |
 | 2026-10-15 | Order notifications via a Telegram bot | Free, reliable from Apps Script, any phone | ntfy.sh push (**tried and shipped first, superseded same day**: its free limit is per IP and all Apps Script shares Google's IPs → 429 "daily quota reached"); paid ntfy (~$5/mo); Gmail email (one ~100/day quota shared by every shop under Ethan's account); Twilio SMS (~$1–2/mo + ~1¢/text + A2P registration); email-to-text (AT&T shut down 2025) |
 | 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
+| 2026-10-16 | Several open times per day = comma-separated ranges in the same day row | Client: open 8:15–9, closed 9–1, open 1–4; one row per day stays readable in the Sheet; old one-range rows unchanged | A second set of rows (hoursMon2…); a separate "break" setting (only one break per day) |
 | 2026-10-15 | Opening hours = one Settings row per day (`hoursSun`…), checked by the Google script in the Sheet's time zone; the Close button wins over hours; no rows = always open | Ethan picked per-day hours (Shabbat: Friday early close, Saturday closed; nightly 12am close); server-side so a phone clock can't bypass it; existing shops keep working untouched | Same hours every day (no early Friday); one JSON cell (unreadable for sellers in the Sheet); browser-only check (bypassable); Open overriding hours (could force 3am orders) |
 | 2026-10-15 | Analytics computed in the browser from the `list` answer | No new backend action or Google permission; works in demo mode | A server-side stats action |
 | 2026-10-15 | Maaser = 10% of paid **sales** (Paid ticked, Zelle or cash), shown on admin; no cost tracking | Ethan's choice; simplest; paid orders only | 10% of profit with a Costs tab (more accurate, more input); one cost box |
