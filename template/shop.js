@@ -49,26 +49,25 @@ async function init() {
 
 // Every option is a checkbox: buyers can combine mains (turkey + pastrami) and add any extras.
 // An item on sale (`was` = its regular price) shows the old price crossed out and a Sale sticker.
+// A sold-out item is still listed so buyers know it exists; it just can't be picked today.
+// Pictures show on the big tiles only (extras are small chips); descriptions show on both.
 function option(className, group, item, prefix, checked = false) {
+  const span = (cls, text) => Object.assign(document.createElement('span'), { className: cls, textContent: text });
   const label = document.createElement('label');
-  label.className = className + (item.was ? ' on-sale' : '') + (item.soldOut ? ' sold-out' : '');
-  const input = Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked, disabled: !!item.soldOut });
-  if (item.soldOut) {
-    // Still listed so buyers know it exists; it just can't be picked today.
-    label.append(input, Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name }),
-      Object.assign(document.createElement('span'), { className: 'opt-price', textContent: 'Sold out' }));
-    return label;
-  }
-  const name = Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name });
-  const price = Object.assign(document.createElement('span'), { className: 'opt-price', textContent: prefix + money(item.price) });
-  if (item.was) {
+  label.className = className + (item.was ? ' on-sale' : '') + (item.soldOut ? ' sold-out' : '') + (item.image && className === 'tile' ? ' has-pic' : '');
+  label.append(Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked, disabled: !!item.soldOut }));
+  const price = span('opt-price', item.soldOut ? 'Sold out' : prefix + money(item.price));
+  if (item.was && !item.soldOut) {
     const was = Object.assign(document.createElement('s'), { className: 'opt-was', textContent: money(item.was) });
     was.setAttribute('aria-label', 'was ' + money(item.was));
     price.prepend(was, ' ');
-    label.append(input, Object.assign(document.createElement('span'), { className: 'sale-tag', textContent: 'Sale' }), name, price);
-  } else {
-    label.append(input, name, price);
+    label.append(span('sale-tag', 'Sale'));
   }
+  // alt="": the name right next to it already says what it is.
+  if (item.image && className === 'tile') label.append(Object.assign(document.createElement('img'), { className: 'opt-pic', src: item.image, alt: '' }));
+  label.append(span('opt-name', item.name));
+  if (item.desc) label.append(span('opt-desc', item.desc));
+  label.append(price);
   return label;
 }
 
