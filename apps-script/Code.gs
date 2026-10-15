@@ -5,7 +5,7 @@ const MAX_QTY = 10;
 const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', 'Completed'];
 const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
-const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price'];
+const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price', 'Sold out'];
 const MAX_MENU_ITEMS = 60;
 
 function doGet(e) {
@@ -51,11 +51,12 @@ function setup() {
   // Example rows. Replace them with the shop's real menu.
   // Type "main" = the main choice (e.g. the meat; buyers can combine several). Type "extra" = optional add-ons.
   // Sale price: optional, lower than Price; while set, buyers pay it and see the old price crossed out.
+  // Sold out: tick it and buyers see the item but can't pick it.
   make('Menu', [
     MENU_HEADERS,
-    ['main', 'Example item', 6, ''],
-    ['main', 'Another item', 7, ''],
-    ['extra', 'Example extra', 0.5, ''],
+    ['main', 'Example item', 6, '', false],
+    ['main', 'Another item', 7, '', false],
+    ['extra', 'Example extra', 0.5, '', false],
   ]);
   make('Settings', [
     ['Key', 'Value'],
@@ -75,7 +76,7 @@ function setup() {
 function getMenu_() {
   const ss = SpreadsheetApp.getActive();
   const menu = { shop: {}, mains: [], extras: [] };
-  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price, sale]) => {
+  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price, sale, soldOut]) => {
     const item = { name: String(name).trim(), price: Number(price) };
     if (!item.name || !(item.price >= 0)) return;
     // On sale: `price` becomes the sale price, so every total (here and in the browser) uses it
@@ -85,6 +86,7 @@ function getMenu_() {
       item.was = item.price;
       item.price = salePrice;
     }
+    if (ticked_(soldOut)) item.soldOut = true;
     const t = String(type).trim().toLowerCase();
     if (t === 'main') menu.mains.push(item);
     else if (t === 'extra') menu.extras.push(item);
@@ -132,6 +134,7 @@ function pickItems_(list, names) {
   return [...new Set(Array.isArray(names) ? names : [])].map(n => {
     const found = list.find(i => i.name === n);
     if (!found) throw new Error('That is not on the menu anymore: ' + n);
+    if (found.soldOut) throw new Error('Sorry, ' + n + ' just sold out. Please pick something else.');
     return found;
   });
 }
@@ -315,7 +318,7 @@ function saveMenu_(items) {
       if (sale === null) throw new Error('"' + name + '": the sale price must be a number from 0 to 999.');
       if (sale >= price) throw new Error('"' + name + '": the sale price must be lower than the regular price.');
     }
-    return [type, name, price, sale];
+    return [type, name, price, sale, it.soldOut === true];
   });
   if (!rows.some(r => r[0] === 'main')) throw new Error('The menu needs at least one item (not just extras).');
 
@@ -326,7 +329,10 @@ function saveMenu_(items) {
     sheet.getRange(1, 1, 1, MENU_HEADERS.length).setValues([MENU_HEADERS]); // older Sheets had no Sale price column
     const old = sheet.getLastRow() - 1;
     if (old > 0) sheet.getRange(2, 1, old, MENU_HEADERS.length).clearContent();
-    if (rows.length) sheet.getRange(2, 1, rows.length, MENU_HEADERS.length).setValues(rows.map(r => r.map(safeCell_)));
+    if (rows.length) {
+      sheet.getRange(2, 1, rows.length, MENU_HEADERS.length).setValues(rows.map(r => r.map(safeCell_)));
+      sheet.getRange(2, MENU_HEADERS.length, rows.length, 1).insertCheckboxes(); // Sold out: tickable in the Sheet too
+    }
   } finally {
     lock.releaseLock();
   }
