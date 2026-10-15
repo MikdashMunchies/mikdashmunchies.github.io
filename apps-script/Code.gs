@@ -7,7 +7,14 @@ const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'To
 const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
 const PAYMENT_COL = 12;
-const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price', 'Sold out'];
+const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price', 'Sold out', 'Picture', 'Description'];
+const SOLD_OUT_COL = 5;
+// A picture is stored right in its Menu cell as a small JPEG "data:" text (the admin page shrinks it
+// first). A cell holds at most 50,000 characters, so no Google Drive permission is needed.
+// ponytail: every picture rides along with every menu load; move them to Drive if menus get big.
+const MAX_PICTURE = 45000;
+const PICTURE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/;
+const MAX_DESCRIPTION = 120;
 const MAX_MENU_ITEMS = 60;
 // Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00".
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -65,11 +72,12 @@ function setup() {
   // Type "main" = the main choice (e.g. the meat; buyers can combine several). Type "extra" = optional add-ons.
   // Sale price: optional, lower than Price; while set, buyers pay it and see the old price crossed out.
   // Sold out: tick it and buyers see the item but can't pick it.
+  // Picture and Description: set them on the admin page's Menu tab (a picture can't be pasted here).
   make('Menu', [
     MENU_HEADERS,
-    ['main', 'Example item', 6, '', false],
-    ['main', 'Another item', 7, '', false],
-    ['extra', 'Example extra', 0.5, '', false],
+    ['main', 'Example item', 6, '', false, '', ''],
+    ['main', 'Another item', 7, '', false, '', ''],
+    ['extra', 'Example extra', 0.5, '', false, '', ''],
   ]);
   make('Settings', [
     ['Key', 'Value'],
@@ -91,7 +99,7 @@ function setup() {
 function getMenu_() {
   const ss = SpreadsheetApp.getActive();
   const menu = { shop: {}, mains: [], extras: [] };
-  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price, sale, soldOut]) => {
+  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price, sale, soldOut, picture, description]) => {
     const item = { name: String(name).trim(), price: Number(price) };
     if (!item.name || !(item.price >= 0)) return;
     // On sale: `price` becomes the sale price, so every total (here and in the browser) uses it
@@ -102,6 +110,9 @@ function getMenu_() {
       item.price = salePrice;
     }
     if (ticked_(soldOut)) item.soldOut = true;
+    if (PICTURE.test(String(picture || ''))) item.image = String(picture);
+    const desc = clean_(description, MAX_DESCRIPTION);
+    if (desc) item.desc = desc;
     const t = String(type).trim().toLowerCase();
     if (t === 'main') menu.mains.push(item);
     else if (t === 'extra') menu.extras.push(item);
@@ -420,7 +431,11 @@ function saveMenu_(items) {
       if (sale === null) throw new Error('"' + name + '": the sale price must be a number from 0 to 999.');
       if (sale >= price) throw new Error('"' + name + '": the sale price must be lower than the regular price.');
     }
-    return [type, name, price, sale, it.soldOut === true];
+    const image = String(it.image || '');
+    if (image && (image.length > MAX_PICTURE || !PICTURE.test(image))) throw new Error('"' + name + '": that picture is too big or not a picture. Try another one.');
+    const desc = clean_(it.desc, MAX_DESCRIPTION + 1);
+    if (desc.length > MAX_DESCRIPTION) throw new Error('"' + name + '": the description can be at most ' + MAX_DESCRIPTION + ' characters.');
+    return [type, name, price, sale, it.soldOut === true, image, desc];
   });
   if (!rows.some(r => r[0] === 'main')) throw new Error('The menu needs at least one item (not just extras).');
 
@@ -428,12 +443,12 @@ function saveMenu_(items) {
   lock.waitLock(10000);
   try {
     const sheet = SpreadsheetApp.getActive().getSheetByName('Menu');
-    sheet.getRange(1, 1, 1, MENU_HEADERS.length).setValues([MENU_HEADERS]); // older Sheets had no Sale price column
+    sheet.getRange(1, 1, 1, MENU_HEADERS.length).setValues([MENU_HEADERS]); // older Sheets had no Sale price / Picture / Description columns
     const old = sheet.getLastRow() - 1;
     if (old > 0) sheet.getRange(2, 1, old, MENU_HEADERS.length).clearContent();
     if (rows.length) {
       sheet.getRange(2, 1, rows.length, MENU_HEADERS.length).setValues(rows.map(r => r.map(safeCell_)));
-      sheet.getRange(2, MENU_HEADERS.length, rows.length, 1).insertCheckboxes(); // Sold out: tickable in the Sheet too
+      sheet.getRange(2, SOLD_OUT_COL, rows.length, 1).insertCheckboxes(); // Sold out: tickable in the Sheet too
     }
   } finally {
     lock.releaseLock();

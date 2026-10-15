@@ -54,9 +54,9 @@
   `node build.js` from `features/index.html`, linked from the README) and as a private Claude artifact
   https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw. After editing the file: `node build.js` + republish the artifact.
 - **Client feature list (2026-10-15)** — done: menu, free editing (admin Menu tab), order form, notifications,
-  maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash. **Not built:**
-  surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), pictures +
-  descriptions per item, order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
+  maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash, photos + descriptions
+  per item (2026-10-16). **Not built:**
+  surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
 - **Current Blockers:** Eli's Zelle number/email (his shop is **open** — someone reopened it ~21:00 after Claude
   closed it; ask Ethan). David's real Zelle + prices (sample). Telegram bot (Ethan, "later").
@@ -111,7 +111,9 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   Script) and deployed as a web app (Execute as Me, access Anyone).
 - **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price, Sale price — optional, must be
   lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it;
-  Sold out — checkbox; item stays listed with `soldOut: true`, can't be picked, server refuses orders with it),
+  Sold out — checkbox; item stays listed with `soldOut: true`, can't be picked, server refuses orders with it;
+  Picture — the photo itself as a small JPEG `data:image/...;base64` text in the cell (≤45,000 chars; the admin page
+  shrinks it; given as `image` only if it matches the data-URL pattern; mains only in the UI); Description — ≤120 chars, `desc`),
   `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail, hoursSun…hoursSat), `Orders` (… Item, Extras, …, Paid checkbox (header "Zelled" on older Sheets), Completed checkbox = column K,
   Payment = column L "Cash"/"Zelle" (blank on old rows = Zelle); older Sheets get the
   header on first use via `ordersSheet_()`).
@@ -162,7 +164,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop → same status fields |
 | POST | `{action:'setCash', password, cash}` | password | Turn cash payments on or off → same status fields (incl. `cash`) |
 | POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
-| POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
+| POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut,image,desc}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price, image = jpeg/png/webp data URL ≤45,000 chars or "", desc ≤120) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
@@ -225,6 +227,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-12 | Removed order emails (**superseded 2026-10-15**: email is back as an optional `notifyEmail`) | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
+| 2026-10-16 | Item photos stored in the Menu tab cell itself (small JPEG data URL, shrunk in the browser), shown as a 64px thumbnail on main tiles; descriptions on all items | Ethan chose it: no new Google permission (Drive), nothing to set up per shop; small thumbnails keep the menu clean | Google Drive files (sharper, needs a Drive permission per script); full-width photo cards (overpowering); photos on extras chips (too small) |
 | 2026-10-15 | Cash payment option, on by default, admin switch | Ethan asked; many students pay cash; seller can turn it off | Zelle only (as before); cash off by default |
 | 2026-10-15 | Menu editing + discounts on the admin page (Sheet stays the store) | Ethan: sellers shouldn't need the Sheet | Editing only in the Sheet; percent-off discounts (Ethan chose a sale price); discount codes |
 | 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |

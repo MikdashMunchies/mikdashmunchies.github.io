@@ -285,7 +285,7 @@ async function loadMenu() {
   try {
     const m = await api('menu');
     // The menu gives an item on sale as price = sale price, was = regular price.
-    const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '', soldOut: !!x.soldOut });
+    const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '', soldOut: !!x.soldOut, image: x.image || '', desc: x.desc || '' });
     renderMenu([...m.mains.map(toRow('main')), ...m.extras.map(toRow('extra'))]);
     setMenuStatus('');
   } catch (err) {
@@ -357,14 +357,80 @@ function menuRow(it) {
   discount.addEventListener('click', () => { setSale(true); sale.focus(); });
   endSale.addEventListener('click', () => { sale.value = ''; setSale(false); markDirty(); discount.focus(); });
   remove.addEventListener('click', () => { row.remove(); markDirty(); });
-  [name, price, sale].forEach(i => i.addEventListener('input', markDirty));
+  const [descField, desc] = field('menu-desc', 'Description (optional)', it.desc || '', 'm-desc', { maxLength: 120, placeholder: 'What’s in it, in a few words' });
+  [name, price, sale, desc].forEach(i => i.addEventListener('input', markDirty));
 
-  row.append(nameField, priceField, discount, soldOut, remove, saleField);
+  // Picture: main items only (extras show as small chips). Kept in row.dataset.image until Save.
+  const more = el('div', 'menu-more');
+  if (it.type === 'main') {
+    const pic = el('div', 'menu-pic');
+    const thumb = Object.assign(el('img', 'menu-thumb'), { alt: '' });
+    const pick = el('label', 'btn menu-photo');
+    const pickText = el('span');
+    const file = Object.assign(el('input'), { type: 'file', accept: 'image/*' });
+    pick.append(file, pickText);
+    const clear = button('menu-photo-remove', 'Remove photo');
+    const setPic = src => {
+      row.dataset.image = src;
+      thumb.src = src;
+      thumb.hidden = clear.hidden = !src;
+      pickText.textContent = src ? 'Change photo' : 'Add photo';
+    };
+    setPic(it.image || '');
+    file.addEventListener('change', async () => {
+      if (!file.files[0]) return;
+      setMenuStatus('Getting the photo ready…');
+      try {
+        setPic(await shrinkPicture(file.files[0]));
+        markDirty();
+      } catch (err) {
+        setMenuStatus(err.message, true);
+      }
+      file.value = ''; // picking the same file again still fires change
+    });
+    clear.addEventListener('click', () => { setPic(''); markDirty(); pick.focus(); });
+    pic.append(thumb, pick, clear);
+    more.append(pic);
+  }
+  more.append(descField);
+
+  row.append(nameField, priceField, discount, soldOut, remove, saleField, more);
   return row;
 }
 
+// A Menu cell holds at most 50,000 characters, so a photo is shrunk to a small JPEG that fits
+// (the Google script's MAX_PICTURE). Buyers see it as a 64px thumbnail, so this is plenty.
+const MAX_PICTURE = 45000;
+function shrinkPicture(fileObj) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(fileObj);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      for (let size = 400; size >= 100; size = Math.round(size * 0.8)) {
+        const scale = Math.min(1, size / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        const g = c.getContext('2d');
+        g.fillStyle = '#fff'; // see-through PNGs would turn black as a JPEG
+        g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        const data = c.toDataURL('image/jpeg', 0.8);
+        if (data.length <= MAX_PICTURE) return resolve(data);
+      }
+      reject(new Error('That photo is too big to use. Try another one.'));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Couldn't open that photo. Try a JPG or PNG."));
+    };
+    img.src = url;
+  });
+}
+
 function addRow(type) {
-  const row = menuRow({ type, name: '', price: '', sale: '', soldOut: false });
+  const row = menuRow({ type, name: '', price: '', sale: '', soldOut: false, image: '', desc: '' });
   $('menu-' + type).append(row);
   row.querySelector('.m-name').focus();
   markDirty();
@@ -381,6 +447,8 @@ function readMenu() {
     price: dollars(row.querySelector('.m-price').value),
     sale: row.querySelector('.menu-sale').hidden ? '' : dollars(row.querySelector('.m-sale').value),
     soldOut: row.querySelector('.menu-sold-out').getAttribute('aria-pressed') === 'true',
+    image: row.dataset.image || '',
+    desc: row.querySelector('.m-desc').value.trim(),
   }));
 }
 

@@ -373,6 +373,7 @@ test('the public menu never shows notifyEmail', () => {
 });
 
 const PW = 'secret-pass';
+const MENU_HEADERS_FOR_TEST = ['Type', 'Name', 'Price', 'Sale price', 'Sold out', 'Picture', 'Description'];
 const item = (type, name, price, sale = '') => ({ type, name, price, sale });
 
 test('a sale price is what the menu shows and what the order is charged; the regular price is kept as "was"', () => {
@@ -399,10 +400,10 @@ test('admin saves the whole menu: names, prices, sale prices, new and removed it
   ] });
   assert.deepStrictEqual(r, { ok: true });
   assert.deepStrictEqual(sheets.Menu.rows, [
-    ['Type', 'Name', 'Price', 'Sale price', 'Sold out'],
-    ['main', 'Turkey', 6.5, '', false],
-    ['main', 'Roast beef', 8, 6.75, false],
-    ['extra', '=HACK()', 1, '', false],
+    ['Type', 'Name', 'Price', 'Sale price', 'Sold out', 'Picture', 'Description'],
+    ['main', 'Turkey', 6.5, '', false, '', ''],
+    ['main', 'Roast beef', 8, 6.75, false, '', ''],
+    ['extra', '=HACK()', 1, '', false, '', ''],
   ]);
   assert.ok(sheets.Menu.raw.some(row => row[1] === "'=HACK()"), 'names are written as plain text, never formulas');
   const m = get('menu');
@@ -440,6 +441,57 @@ test('a bad menu is refused and nothing is changed', () => {
     assert.match(r.error || '', message, JSON.stringify(items).slice(0, 80));
     assert.strictEqual(JSON.stringify(sheets.Menu.rows), before);
   }
+});
+
+// --- Pictures and descriptions ---------------------------------------------
+
+const PIC = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+
+test('admin adds a picture and a description; buyers get them with the menu', () => {
+  const { post, get, sheets } = load();
+  const r = post({ action: 'saveMenu', password: PW, items: [
+    { ...item('main', 'Turkey', 6), image: PIC, desc: '  Smoked turkey on fresh bread  ' },
+    { ...item('extra', 'Pickles', 0.5), desc: 'Sour' },
+    item('main', 'Plain', 5),
+  ] });
+  assert.deepStrictEqual(r, { ok: true });
+  assert.deepStrictEqual(sheets.Menu.rows[1].slice(5), [PIC, 'Smoked turkey on fresh bread']);
+  const m = JSON.parse(JSON.stringify(get('menu')));
+  assert.deepStrictEqual(m.mains[0], { name: 'Turkey', price: 6, image: PIC, desc: 'Smoked turkey on fresh bread' });
+  assert.deepStrictEqual(m.mains[1], { name: 'Plain', price: 5 }); // nothing extra on items without them
+  assert.strictEqual(m.extras[0].desc, 'Sour');
+});
+
+test('removing a picture clears its cell', () => {
+  const { post, get, sheets } = load();
+  post({ action: 'saveMenu', password: PW, items: [{ ...item('main', 'Turkey', 6), image: PIC }] });
+  post({ action: 'saveMenu', password: PW, items: [{ ...item('main', 'Turkey', 6), image: '' }] });
+  assert.strictEqual(sheets.Menu.rows[1][5], '');
+  assert.strictEqual(get('menu').mains[0].image, undefined);
+});
+
+test('a bad picture or a long description is refused and nothing is changed', () => {
+  const bad = [
+    [{ image: 'javascript:alert(1)' }, /picture/i],
+    [{ image: 'https://example.com/a.jpg' }, /picture/i],
+    [{ image: 'data:image/svg+xml;base64,PHN2Zz4=' }, /picture/i],
+    [{ image: 'data:image/jpeg;base64,' + 'A'.repeat(45000) }, /too big/i],
+    [{ desc: 'x'.repeat(121) }, /120/],
+  ];
+  for (const [extra, message] of bad) {
+    const { post, sheets } = load();
+    const before = JSON.stringify(sheets.Menu.rows);
+    const r = post({ action: 'saveMenu', password: PW, items: [{ ...item('main', 'Turkey', 6), ...extra }] });
+    assert.match(r.error || '', message, JSON.stringify(extra).slice(0, 60));
+    assert.strictEqual(JSON.stringify(sheets.Menu.rows), before);
+  }
+});
+
+test('junk typed into the Picture column of the Sheet is never sent to buyers', () => {
+  const { get } = load({ menuRows: [MENU_HEADERS_FOR_TEST, ['main', 'Turkey', 6, '', false, '"><script>', 'Nice']] });
+  const m = get('menu').mains[0];
+  assert.strictEqual(m.image, undefined);
+  assert.strictEqual(m.desc, 'Nice');
 });
 
 // --- Opening hours ---------------------------------------------------------
@@ -575,7 +627,7 @@ test('admin marks items sold out (and back) with saveMenu', () => {
     { type: 'main', name: 'Turkey', price: 6, sale: '', soldOut: true },
     { type: 'main', name: 'Pastrami', price: 7.5, sale: '', soldOut: false },
   ] });
-  assert.deepStrictEqual(sheets.Menu.rows[0], ['Type', 'Name', 'Price', 'Sale price', 'Sold out']);
+  assert.deepStrictEqual(sheets.Menu.rows[0], ['Type', 'Name', 'Price', 'Sale price', 'Sold out', 'Picture', 'Description']);
   assert.deepStrictEqual(sheets.Menu.rows.slice(1).map(r => r[4]), [true, false]);
   assert.deepStrictEqual(get('menu').mains.map(x => !!x.soldOut), [true, false]);
   post({ action: 'saveMenu', password: PW, items: [{ type: 'main', name: 'Turkey', price: 6, sale: '', soldOut: false }] });
