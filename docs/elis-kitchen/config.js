@@ -1,10 +1,10 @@
 const SHOP = {
   "name": "Eli's Kitchen",
-  "tagline": "Pasta, pizza and paninis, made to order.",
+  "tagline": "Crepes, pasta, toasts and drinks, made to order.",
   "item": "meal",
   "mainLabel": "Pick your food",
   "extrasLabel": "Extras",
-  "notePlaceholder": "Extra cheese, well done…",
+  "notePlaceholder": "No whipped cream, extra cheese…",
   "sticker": "Made fresh",
   "image": "italian.svg",
   "imageAlt": "A bowl of pasta next to a slice of pepperoni pizza",
