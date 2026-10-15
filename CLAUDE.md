@@ -33,9 +33,9 @@
     his shop hides the cash choice (old script sends no `cash`), but his admin page wrongly shows "Cash: Accepted"
     and the switch errors ("Unknown action"). Deploy the latest `Code.gs` to fix.
   - Neither shop has hours set (= open per the switch). Neither has Telegram (no bot yet) or `notifyEmail` filled.
-  - **Neither script has photos or split hours yet** (both on `main` 2026-10-16). Until `Code.gs` is deployed, the
-    admin Menu tab shows Add photo / Description but an old script **drops them on Save**, and a split-hours day
-    ("08:15-09:00, 13:00-16:00") is refused. Deploy the latest `Code.gs` to both before telling sellers.
+  - **Photos + split hours (on `main` 2026-10-16): Eli's deployed** (Ethan, 2026-10-16; live menu checked OK, but
+    old vs new can't be told apart until a photo is saved). **David's not yet:** his admin Menu tab shows Add photo /
+    Description but the old script **drops them on Save**, and a split-hours day is refused. Deploy there too.
 - **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
   script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
   empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
