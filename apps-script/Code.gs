@@ -54,6 +54,8 @@ function setup() {
     ['zelleTo', "CHANGE ME: the seller's Zelle phone or email"],
     ['open', 'yes'],
     ['deliveryFee', 1],
+    // The seller subscribes to this in the ntfy app to get a notification per order. Random = private.
+    ['ntfyTopic', 'orders-' + Utilities.getUuid().replace(/-/g, '').slice(0, 16)],
   ]);
   make('Orders', [ORDER_HEADERS]);
   const props = PropertiesService.getScriptProperties();
@@ -131,7 +133,40 @@ function placeOrder_(body) {
   } finally {
     lock.releaseLock();
   }
+  notify_(menu.shop.ntfyTopic, id, order);
   return { id, total: order.total };
+}
+
+// Phone notification through the free ntfy app (ntfy.sh): the seller subscribes to the Settings
+// `ntfyTopic`. No topic = no notification. Anyone who knows the topic can read the notifications, so keep it random.
+// Never fails the order: it is already saved, and a missed notification is the smaller problem.
+function notify_(topic, id, order) {
+  if (!topic) return;
+  const lines = [
+    order.qty + ' × ' + order.mains.join(' + ') + (order.extras.length ? ' + ' + order.extras.join(', ') : ''),
+    (order.room === 'Pickup' ? 'Pickup' : 'Room ' + order.room) + ' · $' + order.total.toFixed(2),
+  ];
+  if (order.note) lines.push('“' + order.note + '”');
+  try {
+    // JSON body, not ntfy's Title header: headers can't carry names like "José".
+    UrlFetchApp.fetch('https://ntfy.sh/', {
+      method: 'post',
+      contentType: 'application/json; charset=utf-8',
+      payload: JSON.stringify({ topic: topic.trim(), title: 'Order #' + id + ' · ' + order.name, message: lines.join('\n') }),
+      muteHttpExceptions: true,
+    });
+  } catch (err) {
+    console.error('ntfy failed: ' + err.message);
+  }
+}
+
+// Run once by hand from the Apps Script editor after adding `ntfyTopic` to Settings. It asks
+// Google's "Allow" for outside requests (needed before deploying, or the live shop breaks) and
+// sends a test notification.
+function testNotify() {
+  const topic = getMenu_().shop.ntfyTopic;
+  if (!topic) throw new Error('Add an ntfyTopic row to the Settings tab first.');
+  notify_(topic, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
 }
 
 function listOrders_() {

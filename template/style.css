@@ -543,6 +543,20 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .shop-status-hint { font-size: 0.9rem; color: var(--ink-soft); }
 .shop-status .btn { flex: none; min-height: 48px; padding: 0 18px; font-size: 0.95rem; box-shadow: 3px 3px 0 var(--ink); }
 
+.maaser {
+  margin-bottom: 26px;
+  padding: 18px;
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--pop);
+  background: var(--cream);
+}
+.maaser-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0 0; }
+.maaser-grid dt { font-weight: 600; font-size: 0.9rem; }
+.maaser-grid dd { margin: 0; }
+.maaser-amount { font: 600 1.6rem/1.2 var(--mono); }
+.maaser-sales { font: 400 0.85rem var(--mono); color: var(--ink-soft); }
+
 .admin-top {
   display: flex;
   justify-content: space-between;
