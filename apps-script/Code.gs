@@ -57,6 +57,8 @@ function setup() {
     ['deliveryFee', 1],
     // Who gets a Telegram message per order: chat ids, comma-separated. Find them with telegramChats().
     ['telegramChatId', ''],
+    // Who gets an email per order: addresses, comma-separated (optional).
+    ['notifyEmail', ''],
   ]);
   make('Orders', [ORDER_HEADERS]);
   const props = PropertiesService.getScriptProperties();
@@ -85,7 +87,7 @@ function getMenu_() {
 }
 
 // The menu link is public: only the settings the website uses. Everything else in Settings
-// (like telegramChatId) stays private.
+// (like telegramChatId and notifyEmail) stays private.
 function publicMenu_() {
   const menu = getMenu_();
   const { zelleTo, open, deliveryFee } = menu.shop;
@@ -143,24 +145,39 @@ function placeOrder_(body) {
   } finally {
     lock.releaseLock();
   }
-  notify_(menu.shop.telegramChatId, id, order);
+  notify_(menu.shop, id, order);
   return { id, total: order.total };
 }
 
-// Order message on the seller's phone through Telegram. One bot for every shop: its token is the
-// Script Property TELEGRAM_TOKEN (a password: never in the Sheet or the code). Settings
-// telegramChatId says who gets this shop's orders (comma-separated). Missing either = no message.
-// Never fails the order: it is already saved, and a missed message is the smaller problem.
+// Tells the seller about a new order, by Telegram and/or email, whichever the Settings tab has:
+// - telegramChatId: Telegram chat ids (comma-separated). One bot for every shop; its token is the
+//   Script Property TELEGRAM_TOKEN (a password: never in the Sheet or the code).
+// - notifyEmail: email addresses (comma-separated). Sent from the Google account that deployed the
+//   script, so every shop shares that account's Gmail quota (~100 recipients a day on a free account).
+// Neither set = nothing sent. Never fails the order: it is already saved, and a missed message is the
+// smaller problem. Returns false if anything that was tried failed (testNotify uses that).
 // (ntfy.sh was tried first: its free per-address limit is shared by every Apps Script user, so it refused.)
-function notify_(chatIds, id, order) {
+function notify_(shop, id, order) {
+  const title = 'New order #' + id + ' · ' + order.name;
   const lines = [
-    'New order #' + id + ' · ' + order.name,
     order.qty + ' × ' + order.mains.join(' + ') + (order.extras.length ? ' + ' + order.extras.join(', ') : ''),
     (order.room === 'Pickup' ? 'Pickup' : 'Room ' + order.room) + ' · $' + order.total.toFixed(2),
   ];
   if (order.note) lines.push('“' + order.note + '”');
-  const ids = String(chatIds || '').split(',').map(c => c.trim()).filter(Boolean);
-  return ids.every(chat => telegram_('sendMessage', { chat_id: chat, text: lines.join('\n') }) !== null);
+  const list = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+  // map, not every: one failed chat must not stop the rest from getting the order.
+  const results = list(shop.telegramChatId).map(chat => telegram_('sendMessage', { chat_id: chat, text: [title, ...lines].join('\n') }) !== null);
+  const emails = list(shop.notifyEmail).filter(x => x.includes('@'));
+  if (emails.length) {
+    try {
+      MailApp.sendEmail({ to: emails.join(','), subject: title, body: lines.join('\n') });
+      results.push(true);
+    } catch (err) {
+      console.error('Email failed: ' + err.message);
+      results.push(false);
+    }
+  }
+  return results.every(Boolean);
 }
 
 // One Telegram API call. Returns the answer, or null (and logs why) if it failed or there's no token.
@@ -183,17 +200,20 @@ function telegram_(method, payload) {
   }
 }
 
-// Run by hand from the Apps Script editor after setting TELEGRAM_TOKEN and telegramChatId.
-// Sends a test message; the first time, Google asks to "connect to an external service": tick it.
+// Run by hand from the Apps Script editor after filling telegramChatId and/or notifyEmail.
+// Sends a test order message. The first time, Google asks for permission ("connect to an external
+// service", "send email as you"): tick every box.
 function testNotify() {
-  if (!PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN')) {
+  const shop = getMenu_().shop;
+  if (!shop.telegramChatId && !shop.notifyEmail) {
+    throw new Error('Fill the Settings row telegramChatId (run telegramChats to find it) and/or notifyEmail first.');
+  }
+  if (shop.telegramChatId && !PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN')) {
     throw new Error('Add the bot token first: Project Settings (gear) > Script Properties > TELEGRAM_TOKEN.');
   }
-  const chats = getMenu_().shop.telegramChatId;
-  if (!chats) throw new Error('Put a chat id in the Settings tab row telegramChatId first (run telegramChats to find it).');
-  const sent = notify_(chats, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
-  if (!sent) throw new Error('Test message FAILED (reason in the log above). Did that person press Start on the bot?');
-  console.log('Test message sent to ' + chats);
+  const sent = notify_(shop, 0, { name: 'Test', room: '101', mains: ['Test item'], extras: [], qty: 1, total: 0, note: 'It works!' });
+  if (!sent) throw new Error('Test message FAILED (reason in the log above). Telegram: did they press Start on the bot?');
+  console.log('Test message sent to ' + [shop.telegramChatId, shop.notifyEmail].filter(Boolean).join(', '));
 }
 
 // Run by hand: lists everyone who pressed Start on the bot recently (Telegram keeps about a day),
