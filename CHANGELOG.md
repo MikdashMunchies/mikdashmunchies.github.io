@@ -13,8 +13,31 @@ Notable changes to **this project**, newest first. One dated block per working s
   Outside them the shop says "Closed · opens …" and the Google script refuses orders. Today's hours show
   under the shop name. No hours set = open as before. 14 new tests.
 
+- Order alerts: Telegram bot (Settings `telegramChatId`, token in Script Property `TELEGRAM_TOKEN`) and/or email
+  (Settings `notifyEmail`). A failed alert never loses the order. Editor helpers `testNotify`, `telegramChats`.
+- Admin: Maaser box (10% of paid sales, this month + all time), Done column, Analytics tab (orders, sales,
+  average, busiest hour, best sellers).
+- Admin Menu tab: edit names and prices, add/remove items and extras, Discount (a sale price; shop shows
+  ~~old~~ new + Sale sticker), Sold out per item (greyed, can't be picked, server refuses it).
+- Cash payments: buyer picks Zelle or Cash; cash skips the Zelle step. Admin "Accept cash" switch (on by
+  default), Cash/Zelle tag per order. Orders column L = Payment.
+- Eli's Kitchen connected to its own Sheet + script with his real menu.
+- Features page for prospective sellers (Claude artifact, source `features/index.html`).
+
 ### Changed
-- David's and Eli's live Google scripts updated to the hours + menu editor + sold-out `Code.gs` (commit `1d98dc5`).
+- David's and Eli's live Google scripts updated to the hours + menu editor + sold-out `Code.gs` (commit `1d98dc5`);
+  Eli's then to version 5 with cash (`b5c4859`). David's still lacks cash.
+- Seller pricing: $20 setup + $10/month (was $10 + $15).
+- Admin "Zelled" column is now "Paid"; analytics/maaser say "paid".
+- Eli's tagline matches his real menu.
+
+### Fixed
+- Demo orders without a Done value showed as Done (`classList.toggle(x, undefined)`).
+
+### Security
+- The public menu link returned every Settings row (incl. the notification topic). It now returns only
+  `zelleTo`, `open`, `deliveryFee` (+ status fields). David's exposed ntfy topic was removed.
+- ntfy.sh tried and dropped the same day (its free limit is per IP; Apps Script shares Google's IPs → 429).
 
 ## 2026-10-13
 

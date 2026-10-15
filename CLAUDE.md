@@ -26,10 +26,17 @@
   "Paninis Shop", active deployment "Untitled" `AKfycbxvJTUNcf…`) and Eli's Kitchen (Sheet "Eli's Kitchen -
   Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real menu loaded 2026-10-15). Henry's
   Bakery, Yitz's Grill, Josh's Hot Dog Stand are in **demo mode** (no Google Sheet yet).
-- **Live scripts (2026-10-15):** both David's and Eli's run `Code.gs` from commit `1d98dc5` = opening hours +
-  menu editor + per-item sold out (Ethan deployed both; checked live: menu answer has `closedBy`/`hours`/`today`).
-  **Not yet deployed: the cash feature** (`c92fe14`, merged after) changed `Code.gs` again — paste + New version
-  in both scripts before cash works. Neither shop has hours set yet (= open per the switch, as before).
+- **Live scripts (2026-10-15, end of day):**
+  - **Eli's:** deployment **version 5** = `Code.gs` from `b5c4859` (hours + menu editor + sold out + **cash**;
+    editor hash `e3-f2-63-f5`). Checked live: menu has `cash: true`, 10 real items, list works.
+  - **David's:** `Code.gs` from `1d98dc5` (hours + menu editor + sold out, no cash). Until cash is deployed there,
+    his shop hides the cash choice (old script sends no `cash`), but his admin page wrongly shows "Cash: Accepted"
+    and the switch errors ("Unknown action"). Deploy the latest `Code.gs` to fix.
+  - Neither shop has hours set (= open per the switch). Neither has Telegram (no bot yet) or `notifyEmail` filled.
+- **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
+  script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
+  empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
+  address is in `notifyEmail` (David's Sheet needs the row added).
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
 - **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
@@ -37,17 +44,24 @@
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
 - **Current Goal:** Make all 5 shops take real orders; work through the client's feature list (below).
-- **Current Priority:** Deploy the latest `Code.gs` (cash) to David's + Eli's scripts; Google Sheet + script for
-  Henry's, Yitz's, Josh's (SETUP.md steps 2–3; needs Ethan's clicks), then `apiUrl` in each shop.json.
+- **Current Priority:** Eli's Zelle (his shop is open with Zelle "CHANGE ME"); deploy the latest `Code.gs` to
+  David's script (cash), together with Telegram once Ethan has the bot; then Google Sheet + script for Henry's,
+  Yitz's, Josh's (SETUP.md steps 2–3; needs Ethan's clicks), then `apiUrl` in each shop.json.
+- **Two Claude sessions worked on this repo on 2026-10-15** (this one: notifications → cash; another: opening
+  hours, in worktree `SchoolFoodSites-hours`). Both deployed to the live scripts. Before deploying `Code.gs`, check
+  the active version in Manage deployments and that the editor holds the latest `main` (hash it).
+- **Features page for prospective sellers:** https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw (source
+  `features/index.html`; private until Ethan shares it). Republish it when features or prices change.
 - **Client feature list (2026-10-15)** — done: menu, free editing (admin Menu tab), order form, notifications,
   maaser, analytics, Zelle, opening hours + auto-close, sale prices, per-item sold out, cash. **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), pictures +
   descriptions per item, order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
-- **Current Blockers:** Real Zelle numbers and prices for every seller (all sample). Eli's live shop showed
-  **open** at ~21:00 2026-10-15 although it was set closed earlier that day — confirm with Ethan it was reopened on purpose.
-- **Recommended Next Task:** Deploy cash `Code.gs` to both scripts; set real hours in David's admin Hours tab
-  (and check the Sheet's File → Settings time zone); then the next client feature Ethan picks.
+- **Current Blockers:** Eli's Zelle number/email (his shop is **open** — someone reopened it ~21:00 after Claude
+  closed it; ask Ethan). David's real Zelle + prices (sample). Telegram bot (Ethan, "later").
+- **Recommended Next Task:** Get Eli's Zelle → set it in his Sheet (or close his shop). When Ethan has the bot:
+  token into both scripts, `telegramChats` → chat ids into Settings, `testNotify`, then deploy the latest
+  `Code.gs` to David's script (cash + all) and check live. Then David's real hours; then the next client feature.
 
 *Last updated: 2026-10-15*
 
@@ -195,6 +209,9 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [x] **Milestone 3b: More shops**: Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand, Eli's Kitchen (demo mode)
 - [ ] **Milestone 3c: New shops live**: a Google Sheet + script per shop, real menus/Zelle (Eli done)
 - [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours)
+- [x] **Milestone 4b: Seller tools**: order alerts (Telegram/email — built, not set up live), maaser, Done column,
+  Analytics, Menu tab (edit/add/remove, sale price, sold out), cash + Accept-cash switch
+- [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop
 
 ## Important Decisions
 
@@ -204,7 +221,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-11 | Server recomputes price from the Menu tab | Anyone can edit browser JS to pay $0.01 | Trusting the browser's total |
 | 2026-10-11 | Order is saved only after "I sent it" | Matches Yeshivah4All's Zelle flow; fewer junk orders | Saving before showing Zelle details |
 | 2026-10-11 | Demo mode when `API_URL` is empty | Preview without Google; show prospects a working demo | Separate mock server |
-| 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
+| 2026-10-12 | Removed order emails (**superseded 2026-10-15**: email is back as an optional `notifyEmail`) | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
 | 2026-10-15 | Cash payment option, on by default, admin switch | Ethan asked; many students pay cash; seller can turn it off | Zelle only (as before); cash off by default |
@@ -214,7 +231,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
 | 2026-10-15 | Opening hours = one Settings row per day (`hoursSun`…), checked by the Google script in the Sheet's time zone; the Close button wins over hours; no rows = always open | Ethan picked per-day hours (Shabbat: Friday early close, Saturday closed; nightly 12am close); server-side so a phone clock can't bypass it; existing shops keep working untouched | Same hours every day (no early Friday); one JSON cell (unreadable for sellers in the Sheet); browser-only check (bypassable); Open overriding hours (could force 3am orders) |
 | 2026-10-15 | Analytics computed in the browser from the `list` answer | No new backend action or Google permission; works in demo mode | A server-side stats action |
-| 2026-10-15 | Maaser = 10% of Zelled **sales**, shown on admin; no cost tracking | Ethan's choice; simplest; paid orders only | 10% of profit with a Costs tab (more accurate, more input); one cost box |
+| 2026-10-15 | Maaser = 10% of paid **sales** (Paid ticked, Zelle or cash), shown on admin; no cost tracking | Ethan's choice; simplest; paid orders only | 10% of profit with a Costs tab (more accurate, more input); one cost box |
 | 2026-10-13 | Home page + README link table generated by `node build.js`; shared CSS/JS links fingerprinted (`?v=<sha1>`) | New shops appear everywhere automatically; GitHub Pages' ~10-min browser cache served stale styles after updates | Hand-maintained link lists (go stale); telling visitors to hard-refresh |
 | 2026-10-12 | Template: one repo, `shops/<slug>/shop.json` + shared `template/`, `node build.js` → `docs/` | Ethan: every shop works the same, only details differ; fix once → all shops update | A separate repo copy per shop (fixes copied by hand); runtime `?shop=` URLs (ugly links) |
 | 2026-10-12 | Shop name/tagline moved from the Sheet to shop.json; menu types renamed `meat`/`add-on` → `main`/`extra` | One source of truth; works for any food | Keeping panini words in the core |
@@ -235,7 +252,23 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
   `raw.githubusercontent.com/MikdashMunchies/mikdashmunchies.github.io/<commit>/apps-script/Code.gs`, put it in
   with `editor.executeEdits`, compare a SHA-256 of the editor text with the committed file, click Save. Before
   replacing, hash the live text against `git log -- apps-script/Code.gs` versions to prove nobody hand-edited it.
-  The **Deploy click itself is Ethan's**: Claude Code's auto mode blocks it as a production deploy.
+  The **Deploy click**: Claude Code's auto mode blocks it as a production deploy (hours session); in
+  bypass-permissions mode Claude clicked it fine (notifications→cash session). Either way, re-check live after.
+  `raw.githubusercontent.com` caches `main` for a few minutes after a push: retry until the new code appears
+  (or use the commit hash in the URL), then hash-check.
+- Apps Script editor quirks (Chrome automation): after the "Authorization required" popup the run can hang on
+  "Execution started" — reload the editor, re-pick the function, Run again. The function dropdown only opens
+  from its arrow; picking an option by accessibility ref silently does nothing — check the dropdown text after.
+- **Google's consent screen has per-permission checkboxes.** An unticked "Connect to an external service" or
+  "Send email as you" still leaves the script "authorized": no new prompt, and the call fails at run time
+  ("You do not have permission to call UrlFetchApp.fetch"). Fix: remove the app at
+  myaccount.google.com/connections, run again, tick every box. `testNotify` throws on this instead of passing.
+- Telegram token is a Script Property, never in the Sheet; `telegram_()` blanks it out of logged errors (network
+  errors quote the URL, which contains it).
+- `classList.toggle(name, undefined)` flips the class ON (undefined = no force). Pass `!!value` — demo orders
+  without a `completed` field showed as Done until this was fixed.
+- Orders column 10 is "Paid" (header "Zelled" on Sheets made before cash); column L "Payment" = Cash/Zelle,
+  blank on old rows = Zelle. `ordersSheet_()` adds missing Completed/Payment headers on first use.
 - On phones, `.ticket-paper` must not have a `filter` or `transform`: either one makes the
   `position: fixed` checkout bar stick to the ticket instead of the screen.
 - `.layout`/`.tiles` set `display`, so `[hidden] { display:none !important }` is needed for views to hide.
