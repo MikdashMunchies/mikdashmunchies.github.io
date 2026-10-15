@@ -25,22 +25,30 @@ async function init() {
     $('from-price').textContent = 'from ' + money(Math.min(...menu.mains.map(m => m.price)));
     $('from-price').hidden = false;
   }
-  $('mains').replaceChildren(...menu.mains.map((m, i) => option('tile', 'main', m, money(m.price), i === 0)));
+  $('mains').replaceChildren(...menu.mains.map((m, i) => option('tile', 'main', m, '', i === 0)));
   $('mains').removeAttribute('aria-busy');
-  $('extras').replaceChildren(...menu.extras.map(x => option('chip', 'extra', x, '+' + money(x.price))));
+  $('extras').replaceChildren(...menu.extras.map(x => option('chip', 'extra', x, '+')));
   // A shop with no extras skips that step entirely.
   $('extras').closest('fieldset').hidden = !menu.extras.length;
   update();
 }
 
 // Every option is a checkbox: buyers can combine mains (turkey + pastrami) and add any extras.
-function option(className, group, item, priceText, checked = false) {
+// An item on sale (`was` = its regular price) shows the old price crossed out and a Sale sticker.
+function option(className, group, item, prefix, checked = false) {
   const label = document.createElement('label');
-  label.className = className;
+  label.className = className + (item.was ? ' on-sale' : '');
   const input = Object.assign(document.createElement('input'), { type: 'checkbox', name: group, value: item.name, checked });
   const name = Object.assign(document.createElement('span'), { className: 'opt-name', textContent: item.name });
-  const price = Object.assign(document.createElement('span'), { className: 'opt-price', textContent: priceText });
-  label.append(input, name, price);
+  const price = Object.assign(document.createElement('span'), { className: 'opt-price', textContent: prefix + money(item.price) });
+  if (item.was) {
+    const was = Object.assign(document.createElement('s'), { className: 'opt-was', textContent: money(item.was) });
+    was.setAttribute('aria-label', 'was ' + money(item.was));
+    price.prepend(was, ' ');
+    label.append(input, Object.assign(document.createElement('span'), { className: 'sale-tag', textContent: 'Sale' }), name, price);
+  } else {
+    label.append(input, name, price);
+  }
   return label;
 }
 

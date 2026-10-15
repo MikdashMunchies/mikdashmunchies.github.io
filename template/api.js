@@ -114,13 +114,32 @@ function demoSave() {
   }
 }
 
+// Menu edits from the demo admin page, kept per shop like demo orders. Same shape as the Google
+// script's menu: an item on sale has price = sale price and was = regular price.
+const DEMO_MENU_KEY = 'demoMenu:' + SHOP.slug;
+function demoMenu() {
+  let items = null;
+  try {
+    items = JSON.parse(localStorage.getItem(DEMO_MENU_KEY));
+  } catch (err) {
+    // Private browsing: the demo menu just isn't editable across pages.
+  }
+  if (!Array.isArray(items)) return DEMO_MENU;
+  const toItem = it => {
+    const x = { name: it.name, price: Number(it.price) };
+    if (it.sale !== '' && it.sale != null && Number(it.sale) < x.price) Object.assign(x, { was: x.price, price: Number(it.sale) });
+    return x;
+  };
+  return { ...DEMO_MENU, mains: items.filter(i => i.type === 'main').map(toItem), extras: items.filter(i => i.type === 'extra').map(toItem) };
+}
+
 function demoApi(action, data) {
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   const fail = message => wait(null).then(() => { throw new Error(message); });
-  if (action === 'menu') return wait({ ...DEMO_MENU, shop: { ...DEMO_MENU.shop, open: demoOpen() } });
+  if (action === 'menu') return wait({ ...demoMenu(), shop: { ...DEMO_MENU.shop, open: demoOpen() } });
   if (action === 'order') {
     if (!demoOpen()) return fail("Sorry, we just sold out, so this order didn't go through. If you already sent the Zelle, message the seller for a refund.");
-    const total = priceOf(DEMO_MENU, data);
+    const total = priceOf(demoMenu(), data);
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders)); // pick up the admin page's ticks
     const id = Math.max(0, ...demoOrders.map(o => o.id)) + 1;
     demoOrders.unshift({ id, time: new Date().toISOString(), name: data.name, room: data.delivery ? data.room : 'Pickup', item: data.mains.join(' + '), extras: data.extras.join(', '), qty: data.qty, total, note: data.note, zelled: false });
@@ -130,6 +149,14 @@ function demoApi(action, data) {
   if (data.password !== '1234') return fail('Wrong password. (Demo code: 1234)');
   if (action === 'list') return wait({ orders: (demoLoad() || demoOrders).map(o => ({ ...o })), open: demoOpen() });
   if (action === 'setOpen') return wait({ ok: true, open: demoOpen(data.open === true) });
+  if (action === 'saveMenu') {
+    try {
+      localStorage.setItem(DEMO_MENU_KEY, JSON.stringify(data.items));
+    } catch (err) {
+      return fail("This browser won't save the demo menu (private browsing?).");
+    }
+    return wait({ ok: true });
+  }
   if (action === 'update') {
     demoOrders.splice(0, demoOrders.length, ...(demoLoad() || demoOrders));
     const o = demoOrders.find(x => x.id === data.id);

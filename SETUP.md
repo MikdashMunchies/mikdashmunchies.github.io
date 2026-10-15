@@ -50,7 +50,8 @@ Use whichever Google account should own the orders: yours if you run it for the 
    ("Unsafe" just means Google hasn't reviewed your own script. That's normal.)
 4. Back in the Sheet there are three new tabs:
    - **Menu**: one row per item. `Type` is `main` (pick one, e.g. the meat) or `extra`
-     (optional add-ons). Prices are plain numbers (`6.5`). Replace the example rows.
+     (optional add-ons). Prices are plain numbers (`6.5`); `Sale price` is optional. Replace the example
+     rows, here or later on the admin page's **Menu** tab (the seller can do it there too).
    - **Settings**: set `zelleTo` to the seller's Zelle phone or email. `open` is `yes`/`no`.
      `deliveryFee` is what delivery costs per order (default `1`; pickup is always free).
      `telegramChatId` / `notifyEmail` say who gets a Telegram message / email per order (see step 3b).

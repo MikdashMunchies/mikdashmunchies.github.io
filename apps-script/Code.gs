@@ -5,6 +5,8 @@ const MAX_QTY = 10;
 const ORDER_HEADERS = ['#', 'Time', 'Name', 'Room', 'Item', 'Extras', 'Qty', 'Total', 'Note', 'Zelled', 'Completed'];
 const ZELLED_COL = 10;
 const COMPLETED_COL = 11;
+const MENU_HEADERS = ['Type', 'Name', 'Price', 'Sale price'];
+const MAX_MENU_ITEMS = 60;
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'menu') return json_(publicMenu_());
@@ -27,6 +29,10 @@ function doPost(e) {
       checkPassword_(body.password);
       return json_(setOpen_(body.open === true));
     }
+    if (body.action === 'saveMenu') {
+      checkPassword_(body.password);
+      return json_(saveMenu_(body.items));
+    }
     return json_({ error: 'Unknown action.' });
   } catch (err) {
     return json_({ error: err.message });
@@ -44,11 +50,12 @@ function setup() {
   };
   // Example rows. Replace them with the shop's real menu.
   // Type "main" = the main choice (e.g. the meat; buyers can combine several). Type "extra" = optional add-ons.
+  // Sale price: optional, lower than Price; while set, buyers pay it and see the old price crossed out.
   make('Menu', [
-    ['Type', 'Name', 'Price'],
-    ['main', 'Example item', 6],
-    ['main', 'Another item', 7],
-    ['extra', 'Example extra', 0.5],
+    MENU_HEADERS,
+    ['main', 'Example item', 6, ''],
+    ['main', 'Another item', 7, ''],
+    ['extra', 'Example extra', 0.5, ''],
   ]);
   make('Settings', [
     ['Key', 'Value'],
@@ -68,9 +75,16 @@ function setup() {
 function getMenu_() {
   const ss = SpreadsheetApp.getActive();
   const menu = { shop: {}, mains: [], extras: [] };
-  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price]) => {
+  rows_(ss.getSheetByName('Menu')).forEach(([type, name, price, sale]) => {
     const item = { name: String(name).trim(), price: Number(price) };
     if (!item.name || !(item.price >= 0)) return;
+    // On sale: `price` becomes the sale price, so every total (here and in the browser) uses it
+    // with no extra code; `was` keeps the regular price for the crossed-out label.
+    const salePrice = Number(sale);
+    if (sale !== '' && sale != null && salePrice >= 0 && salePrice < item.price) {
+      item.was = item.price;
+      item.price = salePrice;
+    }
     const t = String(type).trim().toLowerCase();
     if (t === 'main') menu.mains.push(item);
     else if (t === 'extra') menu.extras.push(item);
@@ -277,6 +291,52 @@ function setOpen_(open) {
   if (i > 0) sheet.getRange(i + 1, 2).setValue(value);
   else sheet.appendRow(['open', value]);
   return { ok: true, open };
+}
+
+// The admin page's Menu tab sends the whole menu; it replaces the Menu tab. Everything is checked
+// before anything is written, so a bad menu changes nothing.
+function saveMenu_(items) {
+  const list = Array.isArray(items) ? items : [];
+  if (list.length > MAX_MENU_ITEMS) throw new Error('A menu can have at most ' + MAX_MENU_ITEMS + ' items.');
+  const seen = {};
+  const rows = list.map(it => {
+    const type = String(it && it.type);
+    if (type !== 'main' && type !== 'extra') throw new Error('Unknown item type: ' + type);
+    const name = clean_(it.name, 41);
+    if (!name || name.length > 40) throw new Error('Every item needs a name of 1 to 40 characters.');
+    const key = type + ':' + name.toLowerCase();
+    if (seen[key]) throw new Error('"' + name + '" is on the menu twice.');
+    seen[key] = true;
+    const price = toPrice_(it.price);
+    if (price === null) throw new Error('"' + name + '": the price must be a number from 0 to 999.');
+    let sale = '';
+    if (it.sale !== '' && it.sale != null) {
+      sale = toPrice_(it.sale);
+      if (sale === null) throw new Error('"' + name + '": the sale price must be a number from 0 to 999.');
+      if (sale >= price) throw new Error('"' + name + '": the sale price must be lower than the regular price.');
+    }
+    return [type, name, price, sale];
+  });
+  if (!rows.some(r => r[0] === 'main')) throw new Error('The menu needs at least one item (not just extras).');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = SpreadsheetApp.getActive().getSheetByName('Menu');
+    sheet.getRange(1, 1, 1, MENU_HEADERS.length).setValues([MENU_HEADERS]); // older Sheets had no Sale price column
+    const old = sheet.getLastRow() - 1;
+    if (old > 0) sheet.getRange(2, 1, old, MENU_HEADERS.length).clearContent();
+    if (rows.length) sheet.getRange(2, 1, rows.length, MENU_HEADERS.length).setValues(rows.map(r => r.map(safeCell_)));
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
+
+// A price as dollars rounded to the cent, or null if it isn't a number from 0 to 999.
+function toPrice_(v) {
+  const n = typeof v === 'number' ? v : (String(v).trim() === '' ? NaN : Number(v));
+  return n >= 0 && n <= 999 ? cents_(n) / 100 : null;
 }
 
 // ponytail: no lockout after wrong guesses; use a long password (SETUP.md). Add a counter if abused.

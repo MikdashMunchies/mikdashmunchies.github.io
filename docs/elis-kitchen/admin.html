@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Shrikhand&display=swap">
-  <link rel="stylesheet" href="../assets/style.css?v=68c5571b72">
+  <link rel="stylesheet" href="../assets/style.css?v=c21124c828">
   <style>:root { --accent: #2B7A3D; --highlight: #F9C74F; }</style>
 </head>
 <body>
@@ -45,6 +45,7 @@
       </div>
       <div class="tabs" role="tablist" aria-label="Admin views">
         <button type="button" role="tab" id="tab-orders" aria-controls="panel-orders" aria-selected="true">Orders</button>
+        <button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" tabindex="-1">Menu</button>
         <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Analytics</button>
       </div>
       <p id="board-error" class="error" role="alert"></p>
@@ -73,6 +74,21 @@
           </table>
         </div>
       </div>
+      <div role="tabpanel" id="panel-menu" aria-labelledby="tab-menu" hidden>
+        <p class="menu-help">Change names and prices, add or remove items, or tap <strong>Discount</strong> to put an item on sale. Buyers see it as soon as you save.</p>
+        <section class="stat-card" aria-labelledby="menu-main-title">
+          <h2 class="stat-card-title" id="menu-main-title">Items</h2>
+          <div class="menu-rows" id="menu-main"></div>
+          <button type="button" class="btn menu-add" id="add-main">+ Add item</button>
+        </section>
+        <section class="stat-card" aria-labelledby="menu-extra-title">
+          <h2 class="stat-card-title" id="menu-extra-title">Extras</h2>
+          <div class="menu-rows" id="menu-extra"></div>
+          <button type="button" class="btn menu-add" id="add-extra">+ Add extra</button>
+        </section>
+        <p class="menu-status" id="menu-status" role="status"></p>
+        <button type="button" class="btn btn-primary btn-wide" id="save-menu">Save menu</button>
+      </div>
       <div role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
         <dl class="stat-tiles">
           <div class="stat"><dt>Orders</dt><dd id="stat-orders">0</dd></div>
@@ -96,7 +112,7 @@
   </main>
 
   <script src="config.js"></script>
-  <script src="../assets/api.js?v=7768c23a5f"></script>
-  <script src="../assets/admin.js?v=fe0bb2c0fd"></script>
+  <script src="../assets/api.js?v=ff19ed4e2d"></script>
+  <script src="../assets/admin.js?v=0bf25ff576"></script>
 </body>
 </html>

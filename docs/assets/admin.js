@@ -46,6 +46,7 @@ async function load() {
     const { orders, open } = await api('list', { password });
     if (ticksAtStart !== ticks) return;
     sessionStorage.setItem(PASSWORD_KEY, password);
+    if ($('board').hidden) loadMenu(); // once per login, never on auto-refresh: it would wipe edits in progress
     showBoard(true);
     renderOpen(open);
     render(orders);
@@ -108,7 +109,7 @@ function renderMaaser() {
 }
 
 // Orders | Analytics tabs (arrow keys move between them, as tabs should).
-const TABS = ['orders', 'stats'];
+const TABS = ['orders', 'menu', 'stats'];
 function showTab(name, focus) {
   TABS.forEach(t => {
     const on = t === name;
@@ -244,3 +245,128 @@ function row(o) {
     tickCell(o, tr, 'completed', 'is-done', `${o.name}'s order completed`));
   return tr;
 }
+
+// --- Menu tab: edit names and prices, add/remove items, discounts (a sale price) ---------------
+// The Google script checks everything again on save; these checks are only for friendly messages.
+
+let menuDirty = false;
+let rowCount = 0;
+
+async function loadMenu() {
+  try {
+    const m = await api('menu');
+    // The menu gives an item on sale as price = sale price, was = regular price.
+    const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '' });
+    renderMenu([...m.mains.map(toRow('main')), ...m.extras.map(toRow('extra'))]);
+    setMenuStatus('');
+  } catch (err) {
+    setMenuStatus("Couldn't load the menu: " + err.message, true);
+  }
+}
+
+function setMenuStatus(text, isError) {
+  $('menu-status').textContent = text;
+  $('menu-status').classList.toggle('error', !!isError);
+}
+
+function markDirty() {
+  menuDirty = true;
+  setMenuStatus('Unsaved changes. Tap Save menu when you are done.');
+}
+
+const priceText = n => (n === '' || n == null ? '' : Number(n).toFixed(2));
+
+function renderMenu(items) {
+  $('menu-main').replaceChildren(...items.filter(i => i.type === 'main').map(menuRow));
+  $('menu-extra').replaceChildren(...items.filter(i => i.type === 'extra').map(menuRow));
+  menuDirty = false;
+}
+
+function field(cls, label, value, inputClass, extra = {}) {
+  const n = ++rowCount; // unique ids so every label points at its own input
+  const wrap = el('div', 'menu-field ' + cls);
+  const lab = el('label', '', label);
+  lab.htmlFor = 'menu-in-' + n;
+  const input = Object.assign(el('input', inputClass), { id: 'menu-in-' + n, value, autocomplete: 'off', ...extra });
+  wrap.append(lab, input);
+  return [wrap, input];
+}
+
+function button(cls, text) {
+  const b = el('button', 'btn ' + cls, text);
+  b.type = 'button';
+  return b;
+}
+
+function menuRow(it) {
+  const row = el('div', 'menu-row');
+  row.dataset.type = it.type;
+  const [nameField, name] = field('menu-name', 'Name', it.name, 'm-name', { maxLength: 40 });
+  const [priceField, price] = field('menu-price', 'Price $', priceText(it.price), 'm-price', { inputMode: 'decimal' });
+  const [saleField, sale] = field('menu-sale', 'Sale price $', priceText(it.sale), 'm-sale', { inputMode: 'decimal' });
+  const discount = button('menu-discount', 'Discount');
+  const remove = button('menu-remove', 'Remove');
+  remove.setAttribute('aria-label', 'Remove ' + (it.name || 'this item'));
+  const endSale = button('menu-end-sale', 'End sale');
+  saleField.append(endSale);
+
+  const setSale = on => {
+    saleField.hidden = !on;
+    discount.hidden = on;
+    row.classList.toggle('is-on-sale', on);
+  };
+  setSale(it.sale !== '' && it.sale != null);
+
+  discount.addEventListener('click', () => { setSale(true); sale.focus(); });
+  endSale.addEventListener('click', () => { sale.value = ''; setSale(false); markDirty(); discount.focus(); });
+  remove.addEventListener('click', () => { row.remove(); markDirty(); });
+  [name, price, sale].forEach(i => i.addEventListener('input', markDirty));
+
+  row.append(nameField, priceField, discount, remove, saleField);
+  return row;
+}
+
+function addRow(type) {
+  const row = menuRow({ type, name: '', price: '', sale: '' });
+  $('menu-' + type).append(row);
+  row.querySelector('.m-name').focus();
+  markDirty();
+}
+$('add-main').addEventListener('click', () => addRow('main'));
+$('add-extra').addEventListener('click', () => addRow('extra'));
+
+const dollars = v => v.trim().replace(/^\$/, '');
+
+function readMenu() {
+  return [...document.querySelectorAll('.menu-row')].map(row => ({
+    type: row.dataset.type,
+    name: row.querySelector('.m-name').value.trim(),
+    price: dollars(row.querySelector('.m-price').value),
+    sale: row.querySelector('.menu-sale').hidden ? '' : dollars(row.querySelector('.m-sale').value),
+  }));
+}
+
+$('save-menu').addEventListener('click', async () => {
+  const items = readMenu();
+  const bad = items.find(i => !i.name || i.price === '' || isNaN(Number(i.price)) || (i.sale !== '' && isNaN(Number(i.sale))));
+  if (bad) return setMenuStatus((bad.name || 'An item') + ' needs a name and a price in numbers, like 6.50.', true);
+  if (!items.some(i => i.type === 'main')) return setMenuStatus('Keep at least one item on the menu.', true);
+  const b = $('save-menu');
+  b.disabled = true;
+  setMenuStatus('Saving…');
+  try {
+    await api('saveMenu', {
+      password,
+      items: items.map(i => ({ ...i, price: Number(i.price), sale: i.sale === '' ? '' : Number(i.sale) })),
+    });
+    await loadMenu();
+    setMenuStatus('Saved. Your shop shows the new menu now.');
+  } catch (err) {
+    setMenuStatus(err.message, true);
+  } finally {
+    b.disabled = false;
+  }
+});
+
+// Leaving with unsaved menu edits asks first (the browser's own "Leave site?" prompt).
+window.addEventListener('beforeunload', e => { if (menuDirty) e.preventDefault(); });

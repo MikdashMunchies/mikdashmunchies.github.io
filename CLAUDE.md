@@ -80,7 +80,8 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   keys are per shop (`adminPassword:<slug>`, `demoOpen:<slug>`).
 - **Backend:** `apps-script/Code.gs`, pasted into the seller's Google Sheet (Extensions → Apps
   Script) and deployed as a web app (Execute as Me, access Anyone).
-- **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price),
+- **Data:** each shop's own Google Sheet. Tabs `Menu` (Type `main`/`extra`, Name, Price, Sale price — optional, must be
+  lower than Price; the menu then gives `price` = sale price and `was` = regular price, so every total uses it),
   `Settings` (Key/Value: zelleTo, open, deliveryFee, telegramChatId, notifyEmail), `Orders` (… Item, Extras, …, Zelled checkbox, Completed checkbox = column K; older Sheets get the
   header on first use via `ordersSheet_()`).
   The site can't store anything itself; the Sheet is the database (admin page reads it). Order numbers come from Script Property `NEXT_ID`.
@@ -101,7 +102,11 @@ orders in an admin page. First customer: **David's Meat Paninis**.
   then the log says "permission"; fix by removing the app at myaccount.google.com/connections and re-running.
 - **Maaser box (admin):** 10% of **Zelled** order totals (incl. delivery fees), this month + all
   time, computed in the browser by `maaserOf()` in `api.js` from the `list` answer. No backend change.
-- **Admin tabs: Orders | Analytics.** Analytics = `analyticsOf()` in `api.js` from the same `list` answer:
+- **Admin Menu tab:** edit names/prices, add/remove items and extras, **Discount** = a sale price per item
+  (Ethan, 2026-10-15: "new price", not a percent). Loads once per login (never on auto-refresh, which would wipe
+  edits); Save sends `saveMenu`; the shop shows ~~old~~ new price + a Sale sticker. Demo mode keeps edits in
+  localStorage (`demoMenu:<slug>`).
+- **Admin tabs: Orders | Menu | Analytics.** Analytics = `analyticsOf()` in `api.js` from the same `list` answer:
   orders, Zelled sales, average order, waiting for Zelle, today, last 7 days, orders by hour (bars in the
   shop's `--accent`, only the hours that had orders, busiest labelled), top 5 best-selling mains. Viewer's local time.
 - **Admin auto-refresh:** every 15s and on tab focus; skipped while the tab is hidden or a tick is saving.
@@ -116,6 +121,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'order', name, delivery, room, note, mains, extras, qty}` | none | Refuse if closed; validate, price (+ fee if delivery), save → `{id,total}` |
 | POST | `{action:'list', password}` | password | All orders, newest first, + `open` |
 | POST | `{action:'setOpen', password, open}` | password | Open or close the shop |
+| POST | `{action:'saveMenu', password, items:[{type,name,price,sale}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
@@ -174,6 +180,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 | 2026-10-12 | Removed order emails | Ethan: not needed; the admin page covers it; one less Google permission | MailApp email per order (built 2026-10-11) |
 | 2026-10-12 | Shop open/closed switch; server refuses orders when closed | Seller sells out; a browser-only check could be bypassed | Hiding the form in the browser only |
 | 2026-10-12 | Host under GitHub org **MikdashMunchies**, repo named `mikdashmunchies.github.io` → links like `mikdashmunchies.github.io/<shop>/` | Free, short, carries the business name; one push updates every shop | Bought business domain (~$12/yr, maybe later); a .com per shop (offer as paid add-on; address bar would still show the long link after redirect); keeping `ethan08madar-web.github.io/school-food-sites/...` (long, personal) |
+| 2026-10-15 | Menu editing + discounts on the admin page (Sheet stays the store) | Ethan: sellers shouldn't need the Sheet | Editing only in the Sheet; percent-off discounts (Ethan chose a sale price); discount codes |
 | 2026-10-15 | Email notifications as an option next to Telegram | Ethan asked for it; easiest for sellers (no app) | Telegram only |
 | 2026-10-15 | Order notifications via a Telegram bot | Free, reliable from Apps Script, any phone | ntfy.sh push (**tried and shipped first, superseded same day**: its free limit is per IP and all Apps Script shares Google's IPs → 429 "daily quota reached"); paid ntfy (~$5/mo); Gmail email (one ~100/day quota shared by every shop under Ethan's account); Twilio SMS (~$1–2/mo + ~1¢/text + A2P registration); email-to-text (AT&T shut down 2025) |
 | 2026-10-15 | Completed checkbox; done rows stay listed, faded + crossed out | Ethan picked it; nothing disappears by accident, easy to undo | Moving done rows to the bottom; hiding them behind "Show completed" |
