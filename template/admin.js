@@ -288,6 +288,7 @@ async function loadMenu() {
     const toRow = type => x => ({ type, name: x.name, price: x.was ?? x.price, sale: x.was ? x.price : '', soldOut: !!x.soldOut, image: x.image || '', desc: x.desc || '' });
     renderMenu([...m.mains.map(toRow('main')), ...m.extras.map(toRow('extra'))]);
     setMenuStatus('');
+    return m;
   } catch (err) {
     setMenuStatus("Couldn't load the menu: " + err.message, true);
   }
@@ -465,7 +466,16 @@ $('save-menu').addEventListener('click', async () => {
       password,
       items: items.map(i => ({ ...i, price: Number(i.price), sale: i.sale === '' ? '' : Number(i.sale) })),
     });
-    await loadMenu();
+    const m = await loadMenu();
+    if (!m) return; // loadMenu already showed why
+    // An out-of-date Google script (deployed before photos existed) says OK but quietly drops
+    // photos and descriptions, so check they came back instead of claiming "Saved".
+    const count = list => list.filter(i => i.image || i.desc).length;
+    if (count([...m.mains, ...m.extras]) < count(items)) {
+      renderMenu(items); // keep the photos on screen so the seller can save again after the update
+      menuDirty = true;
+      return setMenuStatus("Photos and descriptions didn't save: this shop's Google script is an old version. Deploy the new version (Deploy → Manage deployments → New version), then save again.", true);
+    }
     setMenuStatus('Saved. Your shop shows the new menu now.');
   } catch (err) {
     setMenuStatus(err.message, true);
