@@ -136,7 +136,7 @@ Set up Telegram order alerts; explain the new-client setup; make sure every live
 - The first `telegramChats` run found nobody: Ethan had pressed Start in BotFather, not in his own bot.
 
 ## Next steps
-1. Ethan: Eli's script → Deploy → Manage deployments → pencil → New version → Deploy. Then check a photo saves.
+1. Done: Ethan deployed Version 6 (checked in Project History; live menu loads). Still: save a photo, reload.
 2. Eli presses Start on t.me/mikdsahmunchies_bot → `telegramChats` the same day → add his id after Ethan's.
 3. Eli's exact hours on his Hours tab.
 4. Optional: `/revoke` the token and paste the new one into Eli's script.

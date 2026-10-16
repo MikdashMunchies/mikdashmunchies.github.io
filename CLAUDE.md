@@ -28,9 +28,9 @@
   **demo mode** (no Google Sheet yet).
 - **Eli's script (2026-10-16, end of day):** the editor was found holding `c92fe14` (cash only; hash-checked), not
   the latest, so the earlier "deployed latest" note was wrong. Claude put `733ecd6` (= `main`: photos, descriptions,
-  split hours) into the editor, hash-checked (`108ab3d1…`) and **saved** it. **Ethan still has to Deploy → Manage
-  deployments → pencil → New version → Deploy**; until then the live shop runs the old code, and Eli's admin page
-  shows Add photo / "+ Add another time" that the old script drops or refuses.
+  split hours) into the editor, hash-checked (`108ab3d1…`) and **saved** it. Ethan deployed it as **Version 6**
+  (2:27 PM); Project History shows Version 6 holds the photo + break-times code; live menu still loads (10 mains,
+  open, cash on). Not yet proven by a saved photo.
 - **Eli's Settings (2026-10-16):** `zelleTo` = (347) 513-1153 (filled by someone, no longer "CHANGE ME"), open yes,
   deliveryFee 1, `telegramChatId` = 8900259588 (Ethan), `notifyEmail` empty, no hours rows (= open whenever the
   switch is on). Eli asked for split hours (about 8:15–9:00 and 1:00–4:00); exact days/times not entered yet.
@@ -47,8 +47,7 @@
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
   Checked 2026-10-16: every page and shared CSS/JS online is byte-identical to `docs/`.
 - **Current Goal:** Eli fully live; then new clients (each ~25 min: site by Claude, Google Allow/Deploy by Ethan).
-- **Current Priority:** Ethan deploys Eli's saved script as a New version → check live (save one photo on Eli's
-  Menu tab, reload, it should stay). Then Eli presses Start on the bot → add his chat id. Then Eli's hours.
+- **Current Priority:** Save one photo on Eli's Menu tab, reload, it should stay. Then Eli presses Start on the bot → add his chat id. Then Eli's hours.
 - **Before deploying `Code.gs` anywhere:** hash the editor text against `git log -- apps-script/Code.gs` versions
   (Eli's was silently a version behind).
 - **Sellers page (features + pricing):** public at https://mikdashmunchies.github.io/sellers/ (built by
@@ -59,8 +58,8 @@
   prices, per-item sold out, cash, photos + descriptions per item (2026-10-16). **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
-- **Current Blockers:** Ethan's Deploy click for Eli's script. Eli pressing Start on the bot. Eli's exact hours.
-- **Recommended Next Task:** After Ethan deploys: save a photo on Eli's Menu tab, reload, confirm it stays (proves
+- **Current Blockers:** Eli pressing Start on the bot. Eli's exact hours.
+- **Recommended Next Task:** Save a photo on Eli's Menu tab, reload, confirm it stays (proves
   the new script is live). Add Eli's chat id once he presses Start, `testNotify`. Enter Eli's hours on his Hours tab,
   check the live menu's `hours`/`open`/`nextOpen`. Optional: `/revoke` the bot token. Then the next client feature
   or a new client (SETUP.md).

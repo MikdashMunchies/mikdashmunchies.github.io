@@ -22,8 +22,8 @@ Notable changes to **this project**, newest first. One dated block per working s
   in Eli's Settings, `testNotify` delivered.
 
 ### Changed (later session)
-- Eli's script editor updated from `c92fe14` to `733ecd6` (photos, descriptions, split hours) and saved; awaiting
-  Ethan's New-version deploy.
+- Eli's script editor updated from `c92fe14` to `733ecd6` (photos, descriptions, split hours) and deployed as
+  Version 6 (Ethan).
 - SETUP.md Telegram steps: bot name, press Start in the bot (not BotFather), run `telegramChats` the same day,
   no redeploy needed for token/chat ids.
 
