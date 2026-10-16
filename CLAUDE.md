@@ -22,45 +22,35 @@
 
 *Update this at the end of every session. A future session reads it first.*
 
-- **Current Phase:** 5 shops built. **Two connected to Google:** David's Meat Paninis (Sheet "dmp", script
-  "Paninis Shop", active deployment "Untitled" `AKfycbxvJTUNcf…`) and Eli's Kitchen (Sheet "Eli's Kitchen -
-  Orders", script "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`, real menu loaded 2026-10-15). Henry's
-  Bakery, Yitz's Grill, Josh's Hot Dog Stand are in **demo mode** (no Google Sheet yet).
-- **Live scripts (2026-10-16, end of day):**
-  - **Eli's:** latest `Code.gs` (`main` as of `c5e718d`: photos + descriptions + split hours + cash), deployed
-    by Ethan 2026-10-16. Live menu checked: 10 items, open, cash on. Not yet proven to be the new code (no photo
-    saved yet; old and new answer the same until one is).
-  - **David's:** still `Code.gs` from `1d98dc5` (hours + menu editor + sold out). Missing cash, photos, split
-    hours: his shop hides cash, but his admin page shows "Cash: Accepted" (switch errors "Unknown action"), shows
-    Add photo / Description that the old script **drops on Save**, and refuses a day with a break. Ethan: "later".
-  - Live check 2026-10-16: neither shop has hours saved (= open whenever the switch is on). Neither has Telegram
-    (no bot yet) or `notifyEmail` filled.
-  - **Eli is the client who asked for split hours** (open about 8:15–9:00 and 1:00–4:00, closed in between).
-    Ethan can now see "+ Add another time" on Eli's Hours tab (needed Ctrl+Shift+R: his browser held the old page).
-    Exact days/times not entered yet.
-- **Telegram live for Eli's (2026-10-16):** bot @mikdsahmunchies_bot; token in Eli's script; Eli's Settings
-  `telegramChatId` = Ethan's chat (8900259588); `testNotify` sent OK. Eli hasn't pressed Start yet: when he does,
-  run `telegramChats` and add his id (comma-separated). The token was pasted into a Claude chat once: `/revoke` in
-  BotFather + paste the new one into the script when convenient. David is **not a client** (Ethan): skip his setup.
-  Eli's editor code has no Picture/Description headers, so it's **older than `main`** despite the note below.
-- **Older note:** Ethan is making the Telegram bot later (@BotFather → token into each
-  script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
-  empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
-  address is in `notifyEmail` (David's Sheet needs the row added).
+- **Current Phase:** 5 shops built. **Real client: Eli's Kitchen** (Sheet "Eli's Kitchen - Orders", script
+  "Eli's Kitchen Shop", deployment `AKfycbyOIN6S…`). **David's Meat Paninis is not a client** (Ethan, 2026-10-16):
+  his Sheet/script exist but skip setup work for him. Henry's Bakery, Yitz's Grill, Josh's Hot Dog Stand are in
+  **demo mode** (no Google Sheet yet).
+- **Eli's script (2026-10-16, end of day):** the editor was found holding `c92fe14` (cash only; hash-checked), not
+  the latest, so the earlier "deployed latest" note was wrong. Claude put `733ecd6` (= `main`: photos, descriptions,
+  split hours) into the editor, hash-checked (`108ab3d1…`) and **saved** it. **Ethan still has to Deploy → Manage
+  deployments → pencil → New version → Deploy**; until then the live shop runs the old code, and Eli's admin page
+  shows Add photo / "+ Add another time" that the old script drops or refuses.
+- **Eli's Settings (2026-10-16):** `zelleTo` = (347) 513-1153 (filled by someone, no longer "CHANGE ME"), open yes,
+  deliveryFee 1, `telegramChatId` = 8900259588 (Ethan), `notifyEmail` empty, no hours rows (= open whenever the
+  switch is on). Eli asked for split hours (about 8:15–9:00 and 1:00–4:00); exact days/times not entered yet.
+- **Telegram live for Eli's (2026-10-16):** one bot for the business, **@mikdsahmunchies_bot** (t.me link has the
+  typo; `/setname` can change the display name). Token = Script Property `TELEGRAM_TOKEN` in Eli's script (Ethan
+  pasted it). `testNotify` → "Test message sent to 8900259588". Eli hasn't pressed Start yet: when he does, run
+  `telegramChats` the **same day** (Telegram keeps updates ~24h) and add his id after Ethan's, comma-separated.
+  The token was pasted into a Claude chat once: `/revoke` in BotFather + new token into the script when convenient.
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
 - **Live:** https://mikdashmunchies.github.io/<shop>/ for davids-paninis, henrys-bakery, yitzs-grill,
   joshs-hot-dogs, elis-kitchen (admin: + `admin.html`). QR codes: `qr/<shop>.png`.
   Repo https://github.com/MikdashMunchies/mikdashmunchies.github.io (public; Pages = `main` / `/docs`).
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
-- **Current Goal:** Make all 5 shops take real orders; work through the client's feature list (below).
-- **Current Priority:** Eli's Zelle (his shop is open with Zelle "CHANGE ME") and his split hours on the Hours tab;
-  deploy the latest `Code.gs` to David's script (cash, photos, split hours), together with Telegram once Ethan has
-  the bot; then Google Sheet + script for Henry's,
-  Yitz's, Josh's (SETUP.md steps 2–3; needs Ethan's clicks), then `apiUrl` in each shop.json.
-- **Two Claude sessions worked on this repo on 2026-10-15** (this one: notifications → cash; another: opening
-  hours, in worktree `SchoolFoodSites-hours`). Both deployed to the live scripts. Before deploying `Code.gs`, check
-  the active version in Manage deployments and that the editor holds the latest `main` (hash it).
+  Checked 2026-10-16: every page and shared CSS/JS online is byte-identical to `docs/`.
+- **Current Goal:** Eli fully live; then new clients (each ~25 min: site by Claude, Google Allow/Deploy by Ethan).
+- **Current Priority:** Ethan deploys Eli's saved script as a New version → check live (save one photo on Eli's
+  Menu tab, reload, it should stay). Then Eli presses Start on the bot → add his chat id. Then Eli's hours.
+- **Before deploying `Code.gs` anywhere:** hash the editor text against `git log -- apps-script/Code.gs` versions
+  (Eli's was silently a version behind).
 - **Sellers page (features + pricing):** public at https://mikdashmunchies.github.io/sellers/ (built by
   `node build.js` from `features/index.html`, linked from the README) and as a private Claude artifact
   https://claude.ai/artifact/7AGZKesSvfanVL6Ysu1ggw. After editing the file: `node build.js` + republish the artifact.
@@ -69,13 +59,11 @@
   prices, per-item sold out, cash, photos + descriptions per item (2026-10-16). **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
-- **Current Blockers:** Eli's Zelle number/email (his shop is **open** — someone reopened it ~21:00 after Claude
-  closed it; ask Ethan). David's real Zelle + prices (sample). Telegram bot (Ethan, "later").
-- **Recommended Next Task:** Get Eli's Zelle → set it in his Sheet (or close his shop). Get Eli's exact hours →
-  enter on his Hours tab → check the live menu's `hours`/`open`/`nextOpen`. Save one photo on Eli's Menu tab to
-  prove his new script is live. Deploy latest `Code.gs` to David's. When Ethan has the bot:
-  token into both scripts, `telegramChats` → chat ids into Settings, `testNotify`, then deploy the latest
-  `Code.gs` to David's script (cash + all) and check live. Then David's real hours; then the next client feature.
+- **Current Blockers:** Ethan's Deploy click for Eli's script. Eli pressing Start on the bot. Eli's exact hours.
+- **Recommended Next Task:** After Ethan deploys: save a photo on Eli's Menu tab, reload, confirm it stays (proves
+  the new script is live). Add Eli's chat id once he presses Start, `testNotify`. Enter Eli's hours on his Hours tab,
+  check the live menu's `hours`/`open`/`nextOpen`. Optional: `/revoke` the bot token. Then the next client feature
+  or a new client (SETUP.md).
 
 *Last updated: 2026-10-16*
 
@@ -228,7 +216,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours; breaks 2026-10-16)
 - [x] **Milestone 4b: Seller tools**: order alerts (Telegram/email — built, not set up live), maaser, Done column,
   Analytics, Menu tab (edit/add/remove, sale price, sold out), cash + Accept-cash switch
-- [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop
+- [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop (bot made + Eli's → Ethan live 2026-10-16; Eli's own chat id still to add)
 
 ## Important Decisions
 

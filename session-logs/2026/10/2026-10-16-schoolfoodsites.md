@@ -101,3 +101,46 @@ Two last client requests (the client is **Eli**):
   Use the Edit tool for text with backslashes (now in the global rules, v1.40.1).
 - A seller saying a new admin feature is missing: fetch the live HTML first; if it's current, it's their
   browser's saved copy (Ctrl+Shift+R, or close an admin tab left open since before the deploy).
+
+---
+
+# Later session (2026-10-16): Telegram setup + Eli's script catch-up
+
+## Goals
+Set up Telegram order alerts; explain the new-client setup; make sure every live page is current.
+
+## Completed
+- **Bot made** by Ethan: @mikdsahmunchies_bot (typo in the username; `/setname` can fix the display name).
+- **Token** into Eli's script Script Property `TELEGRAM_TOKEN`. Claude opened the Project Settings box and filled
+  the property name with `form_input`; Ethan pasted the value. (He pasted the token into the chat once as well.)
+- **Chat id**: `telegramChats` → `8900259588 Ethan Madar` → typed into Eli's Settings `telegramChatId` as `'8900259588`.
+- **Test**: `testNotify` → log "Test message sent to 8900259588" (the function throws on failure, so this is a
+  real delivery from Apps Script).
+- **David skipped**: Ethan said he's not a client (also saved to auto-memory).
+- **Eli's script was a version behind**: editor text SHA-256 = `c92fe14` (cash), not `733ecd6`. Loaded `733ecd6`
+  from raw.githubusercontent via `monaco` `executeEdits`, hash `108ab3d1…` matched, saved, reloaded, hash matched again.
+- **All live pages current**: home, sellers, 5 shops, Eli's admin, and the 4 shared assets are byte-identical
+  online (cache-busted curl) to `docs/`. Tests 78/78.
+- SETUP.md Telegram steps corrected (see CHANGELOG).
+
+## Not verified
+- Eli's **live** deployment still runs the old code: the Deploy click is Ethan's. After it: save a photo on Eli's
+  Menu tab and reload.
+- A real order's Telegram message (only `testNotify` was run). `notify_()` reads the token and Settings at run
+  time, so the current deployment should already send them.
+
+## Mistakes and what fixed them
+- Ethan clicked my "Done" reply buttons without having done the steps ("i dont know what this is"). I had given
+  several steps at once in jargon (token, Script Properties). What worked: one step per message, exact text to
+  type, and doing every click myself except the paste of the secret.
+- The first `telegramChats` run found nobody: Ethan had pressed Start in BotFather, not in his own bot.
+
+## Next steps
+1. Ethan: Eli's script → Deploy → Manage deployments → pencil → New version → Deploy. Then check a photo saves.
+2. Eli presses Start on t.me/mikdsahmunchies_bot → `telegramChats` the same day → add his id after Ethan's.
+3. Eli's exact hours on his Hours tab.
+4. Optional: `/revoke` the token and paste the new one into Eli's script.
+
+## Context
+- New-client time estimate given to Ethan: ~25 min (site ~2 min by Claude; Google Allow + Deploy are Ethan's clicks).
+- `node build.js new <slug>` + build takes <1s (tested with a throwaway shop, removed).

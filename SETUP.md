@@ -80,21 +80,24 @@ permission box. Emails come from your Google account; all shops together get abo
 
 **Telegram** (no daily limit):
 
-**Once for the whole business** (already done if any shop has it):
+**Once for the whole business** (done 2026-10-16: the bot is **@mikdsahmunchies_bot**, `t.me/mikdsahmunchies_bot`):
 1. In Telegram, message **@BotFather** → `/newbot` → name it (e.g. *MikdashMunchies Orders*) and pick a
-   username ending in `bot`. BotFather replies with a **token**: treat it like a password.
+   username ending in `bot`. BotFather replies with a **token**: treat it like a password. Never paste it into a
+   chat; if it leaks, send `/revoke` to BotFather and put the new token in every shop's script.
 
 **For each shop:**
 1. In Apps Script: gear (**Project Settings**) → **Script Properties** → **Add script property**:
    `TELEGRAM_TOKEN` = the bot token → **Save script properties**. (Never put it in the Sheet or GitHub.)
-2. The seller (and you, if you want copies) opens the bot in Telegram (`t.me/<bot username>`) and taps **Start**.
-3. In Apps Script, pick **`telegramChats`** → **Run**. The log lists everyone who pressed Start, with their
+2. The seller (and you, if you want copies) opens the bot in Telegram (`t.me/mikdsahmunchies_bot`) and taps **Start**.
+   (Start in the **bot's** chat, not in BotFather's.)
+3. **The same day**, in Apps Script, pick **`telegramChats`** → **Run** (Telegram only keeps who pressed Start for
+   about 24 hours; later, the seller just sends the bot "hi" again). The log lists everyone who pressed Start, with their
    chat id. The first run asks Google's permission to "connect to an external service": **tick every box**,
    then **Allow**.
 4. In the Sheet's **Settings** tab, set `telegramChatId` to the chat id(s), comma-separated
    (older Sheets: add the row).
 5. Pick **`testNotify`** → **Run**. Their phone should get "New order #0 · Test".
-6. Deploy a **New version** (step 3) so the live shop sends messages.
+No new deployment is needed for this: the script reads the token and Settings on every order.
 
 No `telegramChatId` and no `notifyEmail` = no messages; everything else works the same.
 

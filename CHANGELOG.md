@@ -17,6 +17,19 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Sellers page: "Photos and descriptions" and "Opening hours, with breaks" cards (artifact republished).
 - 13 new tests (78 total).
 
+### Added (later session)
+- Telegram order alerts live for Eli's Kitchen: bot @mikdsahmunchies_bot made, token in Eli's script, Ethan's chat id
+  in Eli's Settings, `testNotify` delivered.
+
+### Changed (later session)
+- Eli's script editor updated from `c92fe14` to `733ecd6` (photos, descriptions, split hours) and saved; awaiting
+  Ethan's New-version deploy.
+- SETUP.md Telegram steps: bot name, press Start in the bot (not BotFather), run `telegramChats` the same day,
+  no redeploy needed for token/chat ids.
+
+### Fixed (later session)
+- Status said Eli's script ran the latest code; a hash check showed it was one version behind.
+
 ### Changed
 - Eli's live Google script updated to the latest `Code.gs` (Ethan). David's not yet.
 
