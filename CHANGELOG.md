@@ -8,6 +8,10 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ## 2026-10-16
 
+### Fixed
+- Photos "not saving" on Eli's shop: his live script was a version behind (old code says OK and drops photos).
+  Fixed by deploying Version 6; the admin page now warns instead of "Saved" when photos/descriptions don't come back.
+
 ### Added
 - Item photos and descriptions: admin Menu tab gets Add / Change / Remove photo (main items) and a Description
   (all items, ≤120 chars). Photos are shrunk in the browser and stored in the Menu tab's new Picture column, so no
