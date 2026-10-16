@@ -38,7 +38,12 @@
   - **Eli is the client who asked for split hours** (open about 8:15–9:00 and 1:00–4:00, closed in between).
     Ethan can now see "+ Add another time" on Eli's Hours tab (needed Ctrl+Shift+R: his browser held the old page).
     Exact days/times not entered yet.
-- **Notifications not live anywhere yet:** Ethan is making the Telegram bot later (@BotFather → token into each
+- **Telegram live for Eli's (2026-10-16):** bot @mikdsahmunchies_bot; token in Eli's script; Eli's Settings
+  `telegramChatId` = Ethan's chat (8900259588); `testNotify` sent OK. Eli hasn't pressed Start yet: when he does,
+  run `telegramChats` and add his id (comma-separated). The token was pasted into a Claude chat once: `/revoke` in
+  BotFather + paste the new one into the script when convenient. David is **not a client** (Ethan): skip his setup.
+  Eli's editor code has no Picture/Description headers, so it's **older than `main`** despite the note below.
+- **Older note:** Ethan is making the Telegram bot later (@BotFather → token into each
   script's Script Property `TELEGRAM_TOKEN` himself; Claude must not handle the token). David's Settings has an
   empty `telegramChatId` row; Eli's has empty `telegramChatId` + `notifyEmail` rows. Email works as soon as an
   address is in `notifyEmail` (David's Sheet needs the row added).
