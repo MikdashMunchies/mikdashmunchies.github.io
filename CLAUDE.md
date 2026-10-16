@@ -33,12 +33,12 @@
   open, cash on). **Proven 2026-10-16:** a Chocolate Crepe photo is saved in the Menu tab (7 headers now), the live
   menu returns it and the shop page shows it.
 - **Eli's Settings (2026-10-16):** `zelleTo` = (347) 513-1153 (filled by someone, no longer "CHANGE ME"), open yes,
-  deliveryFee 1, `telegramChatId` = 8900259588 (Ethan), `notifyEmail` empty, no hours rows (= open whenever the
+  deliveryFee 1, `telegramChatId` = `8900259588, 8344663422` (Ethan, Eli), `notifyEmail` = Eli's Outlook address, no hours rows (= open whenever the
   switch is on). Eli asked for split hours (about 8:15–9:00 and 1:00–4:00); exact days/times not entered yet.
 - **Telegram live for Eli's (2026-10-16):** one bot for the business, **@mikdsahmunchies_bot** (t.me link has the
   typo; `/setname` can change the display name). Token = Script Property `TELEGRAM_TOKEN` in Eli's script (Ethan
-  pasted it). `testNotify` → "Test message sent to 8900259588". Eli hasn't pressed Start yet: when he does, run
-  `telegramChats` the **same day** (Telegram keeps updates ~24h) and add his id after Ethan's, comma-separated.
+  pasted it). `testNotify` → "Test message sent to 8900259588". Eli added 2026-10-16 (`telegramChats` → "8344663422 Eli");
+  `testNotify` → "Test message sent to 8900259588, 8344663422, <Eli's email>".
   The token was pasted into a Claude chat once: `/revoke` in BotFather + new token into the script when convenient.
 - **Business name:** MikdashMunchies (GitHub organization, owned by Ethan's account).
 - **Home page (all shops):** https://mikdashmunchies.github.io/ · repo README lists every link.
@@ -48,7 +48,7 @@
   The repo is named `<org>.github.io` on purpose: that gives the short link with no repo name in it.
   Checked 2026-10-16: every page and shared CSS/JS online is byte-identical to `docs/`.
 - **Current Goal:** Eli fully live; then new clients (each ~25 min: site by Claude, Google Allow/Deploy by Ethan).
-- **Current Priority:** Eli presses Start on the bot → add his chat id. Then Eli's hours.
+- **Current Priority:** Eli's hours.
 - **Before deploying `Code.gs` anywhere:** hash the editor text against `git log -- apps-script/Code.gs` versions
   (Eli's was silently a version behind).
 - **Sellers page (features + pricing):** public at https://mikdashmunchies.github.io/sellers/ (built by
@@ -59,8 +59,8 @@
   prices, per-item sold out, cash, photos + descriptions per item (2026-10-16). **Not built:**
   surcharge at certain times, meal deals / combo discounts, food labels (meat/dairy/pareve), order-time estimate with a live timer for the buyer, scheduled pre-orders (same day
   free, calendar paid), pickup time slots, customer confirmation (email/text), loyalty.
-- **Current Blockers:** Eli pressing Start on the bot. Eli's exact hours.
-- **Recommended Next Task:** Add Eli's chat id once he presses Start, `testNotify`. Enter Eli's hours on his Hours tab,
+- **Current Blockers:** Eli's exact hours.
+- **Recommended Next Task:** Enter Eli's hours on his Hours tab,
   check the live menu's `hours`/`open`/`nextOpen`. Optional: `/revoke` the bot token. Then the next client feature
   or a new client (SETUP.md).
 
@@ -215,7 +215,7 @@ IBM Plex Mono for prices and the order ticket. Hero: the shop's picture (David: 
 - [x] **Milestone 4a: Opening hours + auto-close** (admin Hours tab; server refuses orders outside hours; breaks 2026-10-16)
 - [x] **Milestone 4b: Seller tools**: order alerts (Telegram/email — built, not set up live), maaser, Done column,
   Analytics, Menu tab (edit/add/remove, sale price, sold out), cash + Accept-cash switch
-- [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop (bot made + Eli's → Ethan live 2026-10-16; Eli's own chat id still to add)
+- [ ] **Milestone 4c: Alerts live**: Telegram bot + chat ids / `notifyEmail` for every live shop (Eli's shop → Ethan + Eli, live 2026-10-16)
 
 ## Important Decisions
 

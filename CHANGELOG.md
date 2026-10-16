@@ -23,7 +23,7 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ### Added (later session)
 - Telegram order alerts live for Eli's Kitchen: bot @mikdsahmunchies_bot made, token in Eli's script, Ethan's chat id
-  in Eli's Settings, `testNotify` delivered.
+  and Eli's chat ids in Eli's Settings (+ Eli's email in `notifyEmail`), `testNotify` delivered.
 
 ### Changed (later session)
 - Eli's script editor updated from `c92fe14` to `733ecd6` (photos, descriptions, split hours) and deployed as

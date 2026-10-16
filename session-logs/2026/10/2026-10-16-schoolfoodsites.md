@@ -137,7 +137,7 @@ Set up Telegram order alerts; explain the new-client setup; make sure every live
 
 ## Next steps
 1. Done: Ethan deployed Version 6 (checked in Project History; live menu loads). Still: save a photo, reload.
-2. Eli presses Start on t.me/mikdsahmunchies_bot → `telegramChats` the same day → add his id after Ethan's.
+2. Done: Eli sent the bot "hi" → id 8344663422 added after Ethan's; `testNotify` sent to both + Eli's email.
 3. Eli's exact hours on his Hours tab.
 4. Optional: `/revoke` the token and paste the new one into Eli's script.
 
