@@ -270,4 +270,10 @@ function demoApi(action, data) {
     demoSave();
     return wait({ ok: true });
   }
+  if (action === 'deleteOrder') {
+    const kept = (demoLoad() || demoOrders).filter(x => x.id !== data.id);
+    demoOrders.splice(0, demoOrders.length, ...kept);
+    demoSave();
+    return wait({ ok: true });
+  }
 }

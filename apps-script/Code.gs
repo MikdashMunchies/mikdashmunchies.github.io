@@ -19,6 +19,10 @@ const MAX_MENU_ITEMS = 60;
 // Opening hours: one Settings row per day, hoursSun ... hoursSat, like "11:00-00:00", or several
 // times with breaks in between: "08:15-09:00, 13:00-16:00".
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Spam brakes: one order per name per minute, and at most BURST_MAX orders in 5 minutes shop-wide.
+const SAME_NAME_MS = 60 * 1000;
+const BURST_MS = 5 * 60 * 1000;
+const BURST_MAX = 20;
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'menu') return json_(publicMenu_());
@@ -36,6 +40,10 @@ function doPost(e) {
     if (body.action === 'update') {
       checkPassword_(body.password);
       return json_(updateOrder_(Number(body.id), body));
+    }
+    if (body.action === 'deleteOrder') {
+      checkPassword_(body.password);
+      return json_(deleteOrder_(Number(body.id)));
     }
     if (body.action === 'setOpen') {
       checkPassword_(body.password);
@@ -244,10 +252,11 @@ function placeOrder_(body) {
   lock.waitLock(10000);
   let id;
   try {
+    const sheet = ordersSheet_();
+    checkFlood_(sheet, order.name, Date.now());
     const props = PropertiesService.getScriptProperties();
     id = Number(props.getProperty('NEXT_ID') || 1);
     props.setProperty('NEXT_ID', id + 1);
-    const sheet = ordersSheet_();
     sheet.appendRow([
       id, new Date(), order.name, order.room, order.mains.join(' + '), order.extras.join(', '),
       order.qty, order.total, order.note, false, false, order.cash ? 'Cash' : 'Zelle',
@@ -261,6 +270,41 @@ function placeOrder_(body) {
   }
   notify_(menu.shop, id, order);
   return { id, total: order.total };
+}
+
+// Slows spam down by looking at the newest orders only: the same name can't order twice within a
+// minute (also stops a double tap from making two orders), and the whole shop takes at most
+// BURST_MAX orders in 5 minutes.
+// ponytail: Apps Script can't see who is sending (no IP), so a spammer who changes names is only held
+// back by the shop-wide cap. Add a shop code buyers must type if that isn't enough.
+function checkFlood_(sheet, name, now) {
+  const last = sheet.getLastRow();
+  const n = Math.min(BURST_MAX, last - 1);
+  if (n < 1) return;
+  const recent = sheet.getRange(last - n + 1, 2, n, 2).getValues() // Time, Name
+    .filter(([time]) => time instanceof Date && now - time.getTime() < BURST_MS);
+  const same = recent.some(([time, who]) => now - time.getTime() < SAME_NAME_MS && String(who).trim().toLowerCase() === name.toLowerCase());
+  if (same) throw new Error('You just placed an order under this name. If this is another order, wait a minute and try again.');
+  if (recent.length >= BURST_MAX) throw new Error('Too many orders right now. Please try again in a few minutes.');
+}
+
+// The admin page's Spam button: removes the order's row from the Sheet for good.
+function deleteOrder_(id) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000); // a new order appended meanwhile would shift the rows
+  try {
+    const sheet = ordersSheet_();
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (Number(rows[i][0]) === id) {
+        sheet.deleteRow(i + 1);
+        return { ok: true };
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  throw new Error('Order not found.');
 }
 
 // Tells the seller about a new order, by Telegram and/or email, whichever the Settings tab has:

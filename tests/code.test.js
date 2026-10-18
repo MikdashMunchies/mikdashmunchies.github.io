@@ -21,8 +21,10 @@ function fakeSheet(rows) {
       rows.push([...r].map(v => (typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v))); // [...r]: plain array, not the vm's
     },
     getLastRow: () => rows.length,
+    deleteRow: r => { rows.splice(r - 1, 1); },
     getRange: (row, col, numRows = 1, numCols = 1) => ({
       getValue: () => (rows[row - 1] || [])[col - 1] ?? '',
+      getValues: () => rows.slice(row - 1, row - 1 + numRows).map(r => r.slice(col - 1, col - 1 + numCols)),
       setValue: v => { raw.push([rows[row - 1][0], v]); rows[row - 1][col - 1] = typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v; },
       setValues: values => {
         raw.push(...values.map(r => [...r]));
@@ -137,7 +139,37 @@ test('delivery fee comes from the sheet (default $1) and is shown on the menu', 
 test('order ids go up', () => {
   const { post } = load();
   assert.strictEqual(post(good).id, 1);
-  assert.strictEqual(post(good).id, 2);
+  assert.strictEqual(post({ ...good, name: 'Ben' }).id, 2);
+});
+
+test('the same name cannot order twice within a minute (any capitals)', () => {
+  const { post, sheets } = load();
+  post(good);
+  assert.match(post({ ...good, name: ' avi ' }).error, /wait a minute/);
+  assert.strictEqual(sheets.Orders.rows.length, 2); // nothing saved
+  assert.strictEqual(post({ ...good, name: 'Ben' }).id, 2); // other names still fine
+  sheets.Orders.rows[1][1] = new Date(Date.now() - 61 * 1000); // Avi's order is now over a minute old
+  assert.strictEqual(post(good).id, 3);
+});
+
+test('at most 20 orders in 5 minutes for the whole shop', () => {
+  const { post, sheets } = load();
+  for (let i = 0; i < 20; i++) assert.strictEqual(post({ ...good, name: 'Buyer ' + i }).id, i + 1);
+  assert.match(post({ ...good, name: 'One more' }).error, /Too many orders/);
+  sheets.Orders.rows[1][1] = new Date(Date.now() - 6 * 60 * 1000); // the oldest one drops out of the 5 minutes
+  assert.strictEqual(post({ ...good, name: 'One more' }).id, 21);
+});
+
+test('deleteOrder needs the password and removes only that order', () => {
+  const { post, sheets } = load();
+  post(good);
+  post({ ...good, name: 'Spammer' });
+  post({ ...good, name: 'Ben' });
+  assert.ok(post({ action: 'deleteOrder', password: 'nope', id: 2 }).error);
+  assert.strictEqual(sheets.Orders.rows.length, 4);
+  assert.match(post({ action: 'deleteOrder', password: 'secret-pass', id: 99 }).error, /not found/);
+  assert.deepStrictEqual(post({ action: 'deleteOrder', password: 'secret-pass', id: 2 }), { ok: true });
+  assert.deepStrictEqual(post({ action: 'list', password: 'secret-pass' }).orders.map(o => o.name), ['Ben', 'Avi']);
 });
 
 test('bad orders are rejected and not saved', () => {

@@ -252,6 +252,30 @@ function tickCell(o, tr, field, cls, label) {
   return td;
 }
 
+// Removes a junk order from the Sheet for good, after asking.
+function spamButton(o) {
+  const btn = el('button', 'spam-btn', 'Spam? Delete');
+  btn.type = 'button';
+  btn.setAttribute('aria-label', `Delete ${o.name}'s order as spam`);
+  btn.addEventListener('click', async () => {
+    if (!confirm(`Delete order from ${o.name}? This can't be undone.`)) return;
+    btn.disabled = true;
+    saving++;
+    ticks++;
+    $('board-error').textContent = '';
+    try {
+      await api('deleteOrder', { password, id: o.id });
+      render(shown.filter(x => x !== o));
+    } catch (err) {
+      $('board-error').textContent = err.message;
+      btn.disabled = false;
+    } finally {
+      saving--;
+    }
+  });
+  return btn;
+}
+
 function row(o) {
   const tr = el('tr');
   tr.classList.toggle('is-zelled', !!o.zelled);
@@ -262,6 +286,7 @@ function row(o) {
   order.append(el('span', 'order-total', money(o.total)));
   order.append(el('span', 'pay-tag' + (o.payment === 'cash' ? ' is-cash' : ''), o.payment === 'cash' ? 'Cash' : 'Zelle'));
   if (o.note) order.append(el('span', 'order-note', `“${o.note}”`));
+  order.append(spamButton(o));
 
   // When the order came in: the Sheet stamps the time automatically on every new order.
   const who = el('td', 'col-name', o.name);

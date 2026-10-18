@@ -151,6 +151,10 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 - **Admin tabs: Orders | Menu | Analytics.** Analytics = `analyticsOf()` in `api.js` from the same `list` answer:
   orders, Zelled sales, average order, waiting for Zelle, today, last 7 days, orders by hour (bars in the
   shop's `--accent`, only the hours that had orders, busiest labelled), top 5 best-selling mains. Viewer's local time.
+- **Spam brakes** (2026-10-18, Eli got spam orders): `checkFlood_()` in `placeOrder_` (inside the lock) reads the newest
+  20 Orders rows: same name (any capitals) within 1 minute = refused (also stops double taps); 20 orders in 5 minutes
+  shop-wide = refused. Apps Script sees no IP, so name-changing spammers only hit the cap; next step if needed = a shop
+  code buyers must type. Seller advice: only make food for Paid orders or people they know; turn off cash during spam.
 - **Admin auto-refresh:** every 15s and on tab focus; skipped while the tab is hidden or a tick is saving.
 - **Admin access:** same site, unlinked (`admin.html`, `noindex`). Hidden shortcut: tap the shop
   name 5 times within 1.5s (`shop.js`). The password is the real protection, not the hidden URL.
@@ -167,6 +171,7 @@ orders in an admin page. First customer: **David's Meat Paninis**.
 | POST | `{action:'setHours', password, hours:[7 × "HH:MM-HH:MM" (comma-separated for breaks) or "closed"]}` | password | Save the week's hours, Sunday first (all 7 checked first) → same status fields |
 | POST | `{action:'saveMenu', password, items:[{type,name,price,sale,soldOut,image,desc}]}` | password | Replace the whole Menu tab (all checked first; ≤60 items, ≥1 main, unique names, prices 0–999, sale < price, image = jpeg/png/webp data URL ≤45,000 chars or "", desc ≤120) |
 | POST | `{action:'update', password, id, zelled?, completed?}` | password | Tick or untick Zelled and/or Completed on one order (only the booleans sent change) |
+| POST | `{action:'deleteOrder', password, id}` | password | Delete one order row for good (admin "Spam? Delete" button) |
 
 POST bodies are sent as `Content-Type: text/plain` (Apps Script can't answer a CORS preflight).
 Errors come back as `{ error: "message" }` with HTTP 200.

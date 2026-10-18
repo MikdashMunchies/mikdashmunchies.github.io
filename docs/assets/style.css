@@ -669,6 +669,9 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 .col-order span { display: block; }
 .order-total { margin-top: 2px; font: 600 0.85rem var(--mono); color: var(--ink-soft); }
 .order-note { font-style: italic; color: var(--ink-soft); font-size: 0.85rem; }
+/* Quiet on purpose: most orders are real. Tall enough to tap. */
+.spam-btn { display: block; min-height: 36px; margin-top: 4px; padding: 0; border: 0; background: none; color: var(--ink-soft); font: 600 0.8rem var(--sans); text-decoration: underline; cursor: pointer; }
+.spam-btn:hover { color: var(--accent); }
 .col-check { width: 64px; text-align: center; }
 .sheet input[type='checkbox'] {
   width: 30px;
