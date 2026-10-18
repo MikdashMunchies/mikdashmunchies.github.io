@@ -6,6 +6,15 @@ Notable changes to **this project**, newest first. One dated block per working s
 
 ---
 
+## 2026-10-18
+
+### Added
+- Spam brakes (Eli was getting spam orders): the Google script refuses a second order under the same name
+  within a minute, and more than 20 orders in 5 minutes shop-wide. Admin orders get a quiet "Spam? Delete"
+  button that removes the row from the Sheet (asks first). Needs `Code.gs` redeployed to each live script.
+
+---
+
 ## 2026-10-16
 
 ### Fixed
