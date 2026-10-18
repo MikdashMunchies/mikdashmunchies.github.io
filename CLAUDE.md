@@ -32,6 +32,10 @@
   (2:27 PM); Project History shows Version 6 holds the photo + break-times code; live menu still loads (10 mains,
   open, cash on). **Proven 2026-10-16:** a Chocolate Crepe photo is saved in the Menu tab (7 headers now), the live
   menu returns it and the shop page shows it.
+- **Eli's script (2026-10-18):** spam brakes + Spam delete button. Editor held `733ecd6` (hash-checked), Claude put in
+  `390abc3` (hash `3ba60c40…`, re-checked after reload) and saved; Ethan deployed a new version. Live check: `deleteOrder`
+  answers "Wrong password." (was "Unknown action."), menu still loads (10 mains, open, cash on). Rate limits not tried
+  live (would put test orders in Eli's Sheet); covered by tests.
 - **Eli's Settings (2026-10-16):** `zelleTo` = (347) 513-1153 (filled by someone, no longer "CHANGE ME"), open yes,
   deliveryFee 1, `telegramChatId` = `8900259588, 8344663422` (Ethan, Eli), `notifyEmail` = Eli's Outlook address, no hours rows (= open whenever the
   switch is on). Eli asked for split hours (about 8:15–9:00 and 1:00–4:00); exact days/times not entered yet.
@@ -64,7 +68,7 @@
   check the live menu's `hours`/`open`/`nextOpen`. Optional: `/revoke` the bot token. Then the next client feature
   or a new client (SETUP.md).
 
-*Last updated: 2026-10-16*
+*Last updated: 2026-10-18*
 
 ---
 
