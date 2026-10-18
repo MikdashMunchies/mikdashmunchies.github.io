@@ -363,6 +363,7 @@ h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
 }
 .ticket-lines { list-style: none; margin: 14px 0; padding: 0; min-height: 1.6em; }
 .ticket-lines li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 0.95rem; }
+.pay-first { margin: 0 0 14px; padding-top: 10px; border-top: 1.5px dashed var(--line); font-weight: 700; font-size: 0.9rem; }
 .ticket-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; font-weight: 600; }
 .ticket-total strong { font-size: 1.6rem; }
 .checkout { border-top: 2px dashed var(--line); padding-top: 14px; }

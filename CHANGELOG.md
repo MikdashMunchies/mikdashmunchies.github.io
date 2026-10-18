@@ -12,6 +12,7 @@ Notable changes to **this project**, newest first. One dated block per working s
 - Spam brakes (Eli was getting spam orders): the Google script refuses a second order under the same name
   within a minute, and more than 20 orders in 5 minutes shop-wide. Admin orders get a quiet "Spam? Delete"
   button that removes the row from the Sheet (asks first). Needs `Code.gs` redeployed to each live script.
+- Shop page order box says "You must pay before you get your food." (every shop; Ethan, against prank orders).
 
 ---
 
